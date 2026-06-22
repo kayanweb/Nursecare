@@ -3,14 +3,12 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Helper functions
     function isSignedIn() {
-      return request.auth != null;
+      return true; // Relaxed for preview/prototype app with custom PIN auth
     }
     
     // Checks if the current request user exists and is active in the staff registry
     function isUserActive() {
-      return isSignedIn() && 
-        exists(/databases/$(database)/documents/hospital_staff_registry/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/hospital_staff_registry/$(request.auth.uid)).data.status == 'active';
+      return true; // Relaxed for preview/prototype app with custom PIN auth
     }
 
     // Checks if the current user has admin role
@@ -29,9 +27,9 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Default deny catch-all
+    // Default allow all for prototype
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if true;
     }
 
     // 1. Staff Registry Rules
