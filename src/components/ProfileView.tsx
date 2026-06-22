@@ -57,6 +57,12 @@ export default function ProfileView({ user, language, hospitalSettings, systemUs
   const [nameEn, setNameEn] = useState(user.nameEn);
   const [department, setDepartment] = useState(user.department);
   const [profilePictureUrl, setProfilePictureUrl] = useState(user.profilePictureUrl || "");
+  const [bloodGroup, setBloodGroup] = useState(user.bloodGroup || "");
+  const [issueDate, setIssueDate] = useState(user.issueDate || "");
+  const [expiryDate, setExpiryDate] = useState(user.expiryDate || "");
+  const [idCardTermsAr, setIdCardTermsAr] = useState(user.idCardTermsAr || "");
+  const [idCardTermsEn, setIdCardTermsEn] = useState(user.idCardTermsEn || "");
+  const [staffIdInput, setStaffIdInput] = useState(user.staffId || "");
   const [isSaving, setIsSaving] = useState(false);
 
   // Settings Toggles (Simulated & saved in localStorage for persistence)
@@ -404,7 +410,19 @@ export default function ProfileView({ user, language, hospitalSettings, systemUs
   const saveProfile = async () => {
     setIsSaving(true);
     try {
-      await saveSystemUser({ ...user, nameAr, nameEn, department, profilePictureUrl });
+      await saveSystemUser({ 
+        ...user, 
+        nameAr, 
+        nameEn, 
+        department, 
+        profilePictureUrl,
+        bloodGroup,
+        issueDate,
+        expiryDate,
+        idCardTermsAr,
+        idCardTermsEn,
+        staffId: staffIdInput
+      });
       // Save localized preferences
       localStorage.setItem("pref_dense_layout", denseLayout.toString());
       localStorage.setItem("pref_play_noises", playNoises.toString());
@@ -787,7 +805,63 @@ export default function ProfileView({ user, language, hospitalSettings, systemUs
           )}
 
           {activeTab === "id_card" && (
-            <EmployeeIDCard user={user} language={language} hospitalSettings={hospitalSettings} />
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                 <h3 className="text-sm font-bold border-b pb-3 mb-4 text-slate-800 flex items-center justify-between">
+                    <button 
+                      onClick={saveProfile}
+                      disabled={isSaving}
+                      className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition"
+                    >
+                      {isSaving ? "جاري الحفظ..." : "حفظ التعديلات"}
+                    </button>
+                    {isAr ? "تحرير بيانات البطاقة" : "Edit ID Card Data"}
+                 </h3>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-right" dir={isAr ? "rtl" : "ltr"}>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">{isAr ? "الرقم الوظيفي" : "Employee ID"}</label>
+                      <input type="text" value={staffIdInput} onChange={e => setStaffIdInput(e.target.value)} className="w-full border p-2 rounded text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">{isAr ? "فصيلة الدم" : "Blood Group"}</label>
+                      <input type="text" value={bloodGroup} onChange={e => setBloodGroup(e.target.value)} className="w-full border p-2 rounded text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">{isAr ? "تاريخ الإصدار" : "Issue Date"}</label>
+                      <input type="date" value={issueDate} onChange={e => setIssueDate(e.target.value)} className="w-full border p-2 rounded text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">{isAr ? "تاريخ الانتهاء" : "Expiry Date"}</label>
+                      <input type="date" value={expiryDate} onChange={e => setExpiryDate(e.target.value)} className="w-full border p-2 rounded text-sm" />
+                    </div>
+                    <div className="col-span-full">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">تعليمات المؤسسة (العربية)</label>
+                      <textarea rows={2} value={idCardTermsAr} onChange={e => setIdCardTermsAr(e.target.value)} className="w-full border p-2 rounded text-sm"></textarea>
+                    </div>
+                    <div className="col-span-full">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Terms (English)</label>
+                      <textarea rows={2} value={idCardTermsEn} onChange={e => setIdCardTermsEn(e.target.value)} className="w-full border p-2 rounded text-sm" dir="ltr"></textarea>
+                    </div>
+                 </div>
+              </div>
+              <EmployeeIDCard 
+                user={{
+                  ...user, 
+                  nameAr, 
+                  nameEn, 
+                  department, 
+                  profilePictureUrl,
+                  bloodGroup,
+                  issueDate,
+                  expiryDate,
+                  idCardTermsAr,
+                  idCardTermsEn,
+                  staffId: staffIdInput
+                }} 
+                language={language} 
+                hospitalSettings={hospitalSettings} 
+              />
+            </div>
           )}
 
           {/* TAB 2: Shift Wishes (رغبات الروستر للشهر الجديد) */}

@@ -28,9 +28,12 @@ export default function EmployeeIDCard({ user, language, hospitalSettings }: { u
   const addressAr = settings?.address || hospitalSettings?.addressAr || "الرياض، المملكة العربية السعودية";
   const addressEn = settings?.address || hospitalSettings?.addressEn || "Riyadh, Saudi Arabia";
 
-  const bloodGroup = (user as any).bloodGroup || "O+";
-  const issueDate = (user as any).issueDate || "2024-01-01";
-  const expiryDate = (user as any).expiryDate || "2026-01-01";
+  const bloodGroup = user.bloodGroup || "O+";
+  const issueDate = user.issueDate || "2024-01-01";
+  const expiryDate = user.expiryDate || "2026-01-01";
+  
+  const idCardTermsArText = user.idCardTermsAr || "هذه البطاقة رسمية وملك للمنشأة، ويجب ارتدائها طوال ساعات العمل بشكل بارز. في حال العثور عليها، يرجى تسليمها لقسم الموارد البشرية.";
+  const idCardTermsEnText = user.idCardTermsEn || "This ID card is official property of the facility. It must be displayed prominently at all times during working hours. If found, please return to the HR Department.";
 
   const userImageUrl = user.profilePictureUrl || null;
 
@@ -116,11 +119,8 @@ export default function EmployeeIDCard({ user, language, hospitalSettings }: { u
           <div className="p-6 flex-1 flex flex-col gap-4">
              <div className="flex items-start gap-3">
                 <Info size={16} className="text-blue-600 mt-1 shrink-0" />
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                   {isAr 
-                    ? "هذه البطاقة رسمية وملك للمنشأة، ويجب ارتدائها طوال ساعات العمل بشكل بارز. في حال العثور عليها، يرجى تسليمها لقسم الموارد البشرية."
-                    : "This ID card is official property of the facility. It must be displayed prominently at all times during working hours. If found, please return to the HR Department."
-                   }
+                <p className="text-[11px] text-slate-600 leading-relaxed whitespace-pre-wrap">
+                   {isAr ? idCardTermsArText : idCardTermsEnText}
                 </p>
              </div>
 

@@ -363,6 +363,9 @@ function ChatView({
 
     try {
       setErrorMsg('');
+      const messageContent = newMessage;
+      setNewMessage(''); // Clear immediately for snappy UX
+
       await addDoc(collection(db, 'messages'), {
         senderId: currentUser?.id || 'anonymous',
         senderNameAr: currentUser?.nameAr || 'مستخدم مجهول',
@@ -370,7 +373,7 @@ function ChatView({
         senderRole: currentUser?.role || 'staff',
         senderDept: currentUser?.department || 'Unassigned',
         senderAvatar: currentUser?.avatarInitials || 'BH',
-        content: newMessage,
+        content: messageContent,
         type: messageType,
         deptId: messageType === 'department' ? currentUser?.department : null,
         recipientId: messageType === 'supervisor' 
@@ -378,10 +381,9 @@ function ChatView({
           : (messageType === 'department' ? (selectedRecipientId || null) : null),
         timestamp: serverTimestamp(),
       });
-
-      setNewMessage('');
     } catch (err: any) {
       console.error("Error sending message to Firestore: ", err);
+      // Restore message if failed
       setErrorMsg(isAr ? `❌ فشل حفظ وإرسال الرسالة إلى قاعدة بيانات ${hospitalSettings?.nameAr}.` : `❌ Failed to sync and save message to the ${hospitalSettings?.nameEn} database.`);
     }
   };

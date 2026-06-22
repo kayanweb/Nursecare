@@ -1853,9 +1853,27 @@ Full administrative override and emergency clinical execution privileges have be
     return defaults[permissionId]?.includes(roleId) || false;
   };
   
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    return sessionStorage.getItem('hospital_isLoggedIn') === 'true';
+  });
 
-  const [currentUser, setCurrentUser] = useState<AppUser>(MOCK_USERS[0]);
+  const [currentUser, setCurrentUser] = useState<AppUser>(() => {
+    const saved = sessionStorage.getItem('hospital_currentUser');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { return MOCK_USERS[0]; }
+    }
+    return MOCK_USERS[0];
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('hospital_isLoggedIn', String(isLoggedIn));
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (currentUser) {
+      sessionStorage.setItem('hospital_currentUser', JSON.stringify(currentUser));
+    }
+  }, [currentUser]);
 
   // Synchronise logged-in user with systemUsers database updates in real-time immediately
   useEffect(() => {
@@ -4439,6 +4457,8 @@ Full administrative override and emergency clinical execution privileges have be
     addSystemLog(`User ${currentUser?.nameEn || "unknown"} logged out.`, "info");
     setIsLoggedIn(false);
     setLoginPasscode("");
+    sessionStorage.removeItem('hospital_isLoggedIn');
+    sessionStorage.removeItem('hospital_currentUser');
   };
 
   // Secure Password/PIN retrieval & reset mechanisms tied to central employee registrar email

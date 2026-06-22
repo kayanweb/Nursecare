@@ -102,6 +102,11 @@ export interface AppUser {
   permissions?: string[];
   moduleOverrides?: string[];
   moduleDenials?: string[];
+  bloodGroup?: string;
+  issueDate?: string;
+  expiryDate?: string;
+  idCardTermsAr?: string;
+  idCardTermsEn?: string;
 }
 
 

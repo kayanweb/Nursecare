@@ -21,6 +21,14 @@ export default function SmartAIAssistant({ language, currentUser }: any) {
   const [triageStatus, setTriageStatus] = useState("");
   const [qSofaScore, setQSofaScore] = useState({ bp: false, rr: false, mentation: false });
   const [apgarScore, setApgarScore] = useState({ hr: 2, resp: 2, tone: 2, reflex: 2, color: 2 });
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<{role: 'user' | 'bot', content: string}[]>([]);
+
+  const handleSendChat = () => {
+    if (!chatInput.trim()) return;
+    setChatMessages([...chatMessages, { role: 'user', content: chatInput }, { role: 'bot', content: 'شكراً لاستفسارك. يتم حالياً البحث في معايير الجودة والسياسات الخاصة بالمستشفى. هذا رد تجريبي.' }]);
+    setChatInput("");
+  };
 
   useEffect(() => {
     const handleOpen = () => setIsOpen(true);
@@ -252,10 +260,22 @@ export default function SmartAIAssistant({ language, currentUser }: any) {
                <div className="bg-slate-800 p-3 rounded-2xl rounded-tr-sm w-[90%] text-slate-200 text-[11px] leading-relaxed">
                  مرحباً! أنا "المستشار الآلي" للتمريض. يمكنك سؤالي عن المعايير، قواعد JCI، والمزيد.
                </div>
+               {chatMessages.map((msg, i) => (
+                 <div key={i} className={`p-3 rounded-2xl text-[11px] leading-relaxed ${msg.role === 'user' ? 'bg-indigo-900/50 rounded-tl-sm self-end w-[80%] text-white mr-auto' : 'bg-slate-800 rounded-tr-sm w-[90%] text-slate-200'}`}>
+                   {msg.content}
+                 </div>
+               ))}
              </div>
              <div className="flex gap-2">
-                 <input type="text" placeholder="اكتب سؤالك هنا..." className="flex-1 bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs outline-none focus:border-indigo-500" />
-                 <button className="bg-indigo-600 rounded-xl px-3 py-2 hover:bg-indigo-500 transition text-white">
+                 <input 
+                   type="text" 
+                   value={chatInput}
+                   onChange={e => setChatInput(e.target.value)}
+                   onKeyDown={e => e.key === 'Enter' && handleSendChat()}
+                   placeholder="اكتب سؤالك هنا..." 
+                   className="flex-1 bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs outline-none focus:border-indigo-500" 
+                 />
+                 <button onClick={handleSendChat} className="bg-indigo-600 rounded-xl px-3 py-2 hover:bg-indigo-500 transition text-white">
                    <Send className="w-4 h-4" />
                  </button>
              </div>

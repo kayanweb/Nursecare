@@ -259,15 +259,15 @@ export function onSnapshot(ref: any, onNext: (snapshot: any) => void, onError?: 
             });
         } else {
             // Collection snapshot
+            const docs = data.map((item: any) => ({
+              data: () => item,
+              id: item.id,
+              exists: () => true
+            }));
             const mockSnapshot = {
+              docs,
               forEach: (callback: (doc: any) => void) => {
-                data.forEach((item: any) => {
-                  callback({
-                    data: () => item,
-                    id: item.id,
-                    exists: () => true
-                  });
-                });
+                docs.forEach((d: any) => callback(d));
               }
             };
             onNext(mockSnapshot);

@@ -228,5 +228,18 @@ service cloud.firestore {
     match /hospital_periodic_reports/{reportId} {
       allow read, write: if isUserActive();
     }
+    // 20. Other collections
+    match /messages/{messageId} {
+      allow read, write: if isUserActive();
+    }
+    match /nursing_tool_archive/{archiveId} {
+      allow read, write: if isUserActive();
+    }
+    match /hospital_approved_medications/{medId} {
+      allow read, write: if isUserActive();
+    }
+    match /hospital_idc_logs/{logId} {
+      allow read, write: if isUserActive();
+    }
   }
 }
