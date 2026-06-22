@@ -1,0 +1,232 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Checks if the current request user exists and is active in the staff registry
+    function isUserActive() {
+      return isSignedIn() && 
+        exists(/databases/$(database)/documents/hospital_staff_registry/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/hospital_staff_registry/$(request.auth.uid)).data.status == 'active';
+    }
+
+    // Checks if the current user has admin role
+    function isAdmin() {
+      return isUserActive() && 
+        (
+          get(/databases/$(database)/documents/hospital_staff_registry/$(request.auth.uid)).data.role == 'admin' ||
+          get(/databases/$(database)/documents/hospital_staff_registry/$(request.auth.uid)).data.role == 'it' ||
+          get(/databases/$(database)/documents/hospital_staff_registry/$(request.auth.uid)).data.role == 'tech' ||
+          get(/databases/$(database)/documents/hospital_staff_registry/$(request.auth.uid)).data.role == 'president'
+        );
+    }
+
+    // Checks if user is reading or writing their own staff registry document
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 1. Staff Registry Rules
+    match /hospital_staff_registry/{userId} {
+      allow get: if isSignedIn() && (isSelf(userId) || isUserActive());
+      allow list: if isUserActive();
+      allow create: if isSignedIn() && isSelf(userId) && request.resource.data.status == 'pending';
+      // Only admins can change critical fields like roles and status
+      allow update: if isUserActive() && (
+        isAdmin() || 
+        (isSelf(userId) && 
+         request.resource.data.role == resource.data.role &&
+         request.resource.data.status == resource.data.status
+        )
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 2. Clinical records
+    match /hospital_clinical_records/{recordId} {
+      allow read, write: if isUserActive();
+    }
+
+    // 3. Daily audits
+    match /hospital_daily_audits/{auditId} {
+      allow read, write: if isUserActive();
+    }
+
+    // 4. System logs
+    match /hospital_system_logs/{logId} {
+      allow read: if isUserActive();
+      allow create: if isSignedIn(); 
+      allow update, delete: if isAdmin();
+    }
+
+    // 5. Daily duty tasks
+    match /hospital_daily_duty_tasks/{taskId} {
+      allow read: if isUserActive();
+      allow write: if isAdmin() || isUserActive();
+    }
+
+    // 6. Custom templates
+    match /hospital_custom_templates/{templateId} {
+      allow read: if isUserActive();
+      allow write: if isAdmin();
+    }
+
+    // 7. Department rosters
+    match /hospital_department_rosters/{rosterId} {
+      allow read: if isUserActive();
+      allow write: if isAdmin() || isUserActive();
+    }
+
+    // 8. Roster wishes
+    match /hospital_roster_wishes/{wishId} {
+      allow read: if isUserActive();
+      allow create: if isUserActive() && request.resource.data.employeeId == request.auth.uid;
+      allow update: if isUserActive() && (
+        isAdmin() || 
+        (resource.data.employeeId == request.auth.uid && request.resource.data.status == 'pending')
+      );
+      allow delete: if isUserActive() && (isAdmin() || resource.data.employeeId == request.auth.uid);
+    }
+
+    // 9. Resolved staffing gaps
+    match /hospital_resolved_gaps/{gapId} {
+      allow read: if isUserActive();
+      allow write: if isAdmin() || isUserActive();
+    }
+
+    // 10. Settings & roles config
+    match /hospital_settings/{settingId} {
+      allow read: if isUserActive() || isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // 11. Notifications
+    match /notifications/{notiId} {
+      allow read: if isUserActive() && (
+        !resource.data.keys().hasAll(['userId']) || 
+        resource.data.userId == request.auth.uid || 
+        resource.data.targetUserId == request.auth.uid
+      );
+      allow create: if isSignedIn();
+      allow update: if isUserActive() && (
+        isAdmin() || 
+        resource.data.targetUserId == request.auth.uid || 
+        resource.data.userId == request.auth.uid
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 12. Organization settings
+    match /organizationSettings/{settingId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // 13. Roles & permissions & access matrix configurations
+    match /roles/{roleId} {
+      allow read: if isUserActive() || isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /permissions/{permId} {
+      allow read: if isUserActive() || isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /access_matrix/{matrixId} {
+      allow read: if isUserActive() || isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // 14. Technical audit logs
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    // 15. Hospital sentinel incidents
+    match /hospital_sentinel_incidents/{incidentId} {
+      allow read, write: if isUserActive();
+    }
+
+    // 16. App configurations
+    match /app_settings/{key} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // 17. Continuous Quality Improvement (CQI) Documents, OVRs, evals, unit inspections
+    match /hospital_cqi_documents/{docId} {
+      allow read: if isUserActive();
+      allow write: if isUserActive() || isAdmin();
+    }
+
+    match /hospital_cqi_ovrs/{ovrId} {
+      allow read, write: if isUserActive();
+    }
+
+    match /hospital_cqi_staff_evals/{evalId} {
+      allow read, write: if isUserActive();
+    }
+
+    match /hospital_cqi_unit_inspections/{inspId} {
+      allow read, write: if isUserActive();
+    }
+
+    match /hospital_policy_acks/{ackId} {
+      allow read, write: if isUserActive();
+    }
+
+    match /hospital_decision_logs/{logId} {
+      allow read, write: if isUserActive();
+    }
+
+    match /hospital_leave_requests/{reqId} {
+      allow read: if isUserActive();
+      allow create: if isUserActive() && request.resource.data.employeeId == request.auth.uid;
+      allow update: if isUserActive();
+      allow delete: if isUserActive() && (resource.data.employeeId == request.auth.uid || isAdmin());
+    }
+
+    match /hospital_admin_requests/{reqId} {
+      allow read: if isUserActive();
+      allow write: if isUserActive();
+    }
+
+    match /hospital_daily_duties/{dutyId} {
+      allow read: if isUserActive();
+      allow write: if isUserActive() || isAdmin();
+    }
+
+    match /hospital_daily_emergency_teams/{teamId} {
+      allow read, write: if isUserActive();
+    }
+
+    // 18. HIS records
+    match /hospital_his_patients/{id} {
+      allow read, write: if isUserActive();
+    }
+
+    match /hospital_his_prescriptions/{id} {
+      allow read, write: if isUserActive();
+    }
+
+    match /hospital_his_invoices/{id} {
+      allow read, write: if isUserActive();
+    }
+
+    // 19. Periodic reports
+    match /hospital_periodic_reports/{reportId} {
+      allow read, write: if isUserActive();
+    }
+  }
+}

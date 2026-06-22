@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Remix: nursemed",
+  "description": "nurse med",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
