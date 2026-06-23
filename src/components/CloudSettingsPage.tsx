@@ -1036,7 +1036,7 @@ export default function CloudSettingsPage({
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ provider: "SUPABASE", settings })
-                  }).catch(console.error);
+                  }).catch(e => console.warn(e.message));
 
                   const success = switchEnvironment("SUPABASE", settings);
                   if (success) {

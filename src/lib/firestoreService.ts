@@ -520,7 +520,7 @@ export function syncClinicalRecords(onData: (records: SavedRecord[]) => void) {
     path,
     (data) => onData(mergeWithLocal(data, path)),
     collection(db, path),
-    (p, cb) => subscribeToClinicalData(p, cb, (err: any) => console.error(err)),
+    (p, cb) => subscribeToClinicalData(p, cb, (err: any) => console.warn("Clinical sync error:", err?.message || err)),
     fbOnSnapshot as any
   );
 }
@@ -553,7 +553,7 @@ export function syncStaffRegistry(onData: (users: AppUser[]) => void) {
     path,
     (data) => onData(mergeWithLocal(data, path)),
     collection(db, path),
-    (p, cb) => subscribeToClinicalData(p, cb, (err: any) => console.error(err)),
+    (p, cb) => subscribeToClinicalData(p, cb, (err: any) => console.warn("Staff sync error:", err?.message || err)),
     fbOnSnapshot as any
   );
 }

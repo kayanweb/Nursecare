@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import defaultFirebaseConfig from "../firebase-applet-config.json";
 
@@ -17,7 +17,11 @@ try {
 }
 
 const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
-// Initialize Firestore using the configured database ID
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || "default-db");
+
+// Initialize Firestore using the configured database ID with long polling to prevent connection hanging
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true
+}, firebaseConfig.firestoreDatabaseId || "default-db");
+
 export const auth = getAuth(app);
 

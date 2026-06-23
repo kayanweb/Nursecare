@@ -62,16 +62,28 @@ export default function AdvancedMedicalCalculators({
   const handleConsultAI = async (id: string, type: "news2" | "isbar", data: any) => {
     setAiLoading(prev => ({ ...prev, [id]: true }));
     try {
-      const response = await fetch("/api/ai/analyze-clinical", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type,
-          data,
-          lang: language
-        })
-      });
-      const resData = await response.json();
+      let response;
+      try {
+        response = await fetch("/api/ai/analyze-clinical", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type,
+            data,
+            lang: language
+          })
+        });
+      } catch (fetchErr) {
+        throw new Error(isAr ? "تعذر الاستجابة من الخادم" : "Server unreachable");
+      }
+
+      let resData;
+      try {
+        resData = await response.json();
+      } catch (jsonErr) {
+        throw new Error(`Server returned invalid data (${response.status})`);
+      }
+
       if (resData.success && resData.analysis) {
         setAiAnalysis(prev => ({ ...prev, [id]: resData.analysis }));
         if (addSystemLog) {

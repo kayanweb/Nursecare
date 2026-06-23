@@ -61,8 +61,8 @@ export function HISProvider({ children }: { children: ReactNode }) {
       // Wait a moment for sync to settle, then add default data only if it is actually empty
       setTimeout(() => {
         if (patients.length === 0) {
-          firestoreSavePatient({ id: "p1", mrn: "MRN-2026-0041", nameEn: "Samir Abdullah Hafez", nameAr: "سمير عبدالله حافظ", age: 45, gender: "male", phone: "0100000000", status: "doctor", insurance: "Cash" }).catch(console.error);
-          firestoreSavePatient({ id: "p2", mrn: "MRN-2026-0042", nameEn: "Fatma Ahmed Ali", nameAr: "فاطمة أحمد علي", age: 30, gender: "female", phone: "0111111111", status: "triage", insurance: "Bupa" }).catch(console.error);
+          firestoreSavePatient({ id: "p1", mrn: "MRN-2026-0041", nameEn: "Samir Abdullah Hafez", nameAr: "سمير عبدالله حافظ", age: 45, gender: "male", phone: "0100000000", status: "doctor", insurance: "Cash" }).catch(e => console.warn(e.message));
+          firestoreSavePatient({ id: "p2", mrn: "MRN-2026-0042", nameEn: "Fatma Ahmed Ali", nameAr: "فاطمة أحمد علي", age: 30, gender: "female", phone: "0111111111", status: "triage", insurance: "Bupa" }).catch(e => console.warn(e.message));
         }
       }, 5000);
     }

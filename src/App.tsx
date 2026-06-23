@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { switchEnvironment } from "./lib/dbConfig";
 import { client as appwriteClient } from "./lib/appwriteService";
 import {
@@ -717,7 +718,7 @@ export default function App() {
           }
         }
       })
-      .catch(console.error);
+      .catch((e) => console.warn("Failed to fetch settings from server:", e.message));
   }, []);
   const [hospitalSettings, setHospitalSettings] = useState<any>({
     nameAr: "مستشفى الرعاية السريرية الموحدة",
@@ -837,6 +838,8 @@ function AppContent() {
   const [quotaExceededMessage, setQuotaExceededMessage] = useState<string | null>(() => {
     return (window as any).firestoreQuotaExceeded ? "Quota limit exceeded" : null;
   });
+
+  const [gatewaySystem, setGatewaySystem] = useState<"wsd"|"his">("his");
 
   useEffect(() => {
     const handleQuota = (e: any) => {
@@ -1278,9 +1281,7 @@ function AppContent() {
       targetTab: "roster",
       targetUserId: currentUser.id
     };
-    const updatedNotifs = [newNotification, ...notifications];
-    setNotifications(updatedNotifs);
-    saveSetting("baheya_notifications", updatedNotifs);
+    dispatchEventNotification(newNotification);
   };
 
   const setResolvedGaps = (updated: Record<string, any>) => {
@@ -1380,6 +1381,33 @@ function AppContent() {
       timestampMs: Date.now()
     };
     saveSystemLog(newLog).catch(err => console.error("Failed to save log to Firebase:", err));
+
+    // Display a toast notification for everything logged to system history as per user requirement
+    if (type === "success") {
+      toast.success(event);
+    } else if (type === "error") {
+      toast.error(event);
+    } else if (type === "warning") {
+      toast.warning(event);
+    } else {
+      toast.info(event);
+    }
+  };
+
+  const dispatchEventNotification = (notif: Notification) => {
+    setNotifications(prev => {
+      const updated = [notif, ...prev];
+      saveSetting("baheya_notifications", updated);
+      return updated;
+    });
+    // System-wide general or directed toast
+    if (notif.targetDepartment === "ALL" || notif.userId === "all") {
+      toast.message(language === "ar" ? `إشعار عام` : `General Broadcast`, {
+        description: language === "ar" ? notif.messageAr : notif.messageEn
+      });
+    } else {
+      toast.info(language === "ar" ? notif.messageAr : notif.messageEn);
+    }
   };
 
   // Secure Corporate State overrides
@@ -1935,7 +1963,32 @@ Full administrative override and emergency clinical execution privileges have be
   useEffect(() => {
     const unsub = syncSetting("baheya_notifications", (data: any) => {
       if (data && Array.isArray(data.value)) {
-        setNotifications(data.value);
+        setNotifications((prev: Notification[]) => {
+          // Detect incoming newly synced notifications from the cloud or local changes
+          if (data.value.length > prev.length && prev.length > 0) {
+            const newCount = data.value.length - prev.length;
+            const newNotifs = data.value.slice(0, newCount) as Notification[];
+            newNotifs.forEach(n => {
+              // Condition check to see if the notification should alert the *current active user session*
+              // General broadcasts OR Directed to user OR targeted via department check
+              const isGlobal = !n.userId || n.userId === "all" || n.targetDepartment === "ALL" || n.targetUserId === "all";
+              const isDirectedToMe = n.userId === currentUser.id || n.targetUserId === currentUser.id;
+              const isDirectedToMyDept = n.targetDepartment && currentUser.department && currentUser.department.includes(n.targetDepartment);
+              const isAdminTargeted = n.userId === "admin" && (currentUser.role === "admin" || currentUser.role === "it");
+              
+              if (isGlobal || isDirectedToMe || isDirectedToMyDept || isAdminTargeted) {
+                // Determine style based on the read/flag status, or default to general system message
+                toast.info(language === "ar" ? n.titleAr || n.messageAr : n.titleEn || n.messageEn, {
+                  description: language === "ar" ? n.bodyAr || "" : n.bodyEn || ""
+                });
+                
+                // Try playing a subtle tone
+                try { playSpatialAudioContextTone("click"); } catch(e) {}
+              }
+            });
+          }
+          return data.value;
+        });
       } else {
         setNotifications([
           {
@@ -2329,6 +2382,12 @@ Full administrative override and emergency clinical execution privileges have be
   // Secure and lock activeTab based on user roles and authorized privileges - highly optimized dependencies
   useEffect(() => {
     if (!currentUser) return;
+    
+    if (gatewaySystem === "his") {
+      if (activeTab !== "his") setActiveTab("his");
+      return;
+    }
+
     const role = currentUser.role;
     if (["head_nurse", "staff", "Staff", "tech", "intern", "assistant", "secretary"].includes(role)) {
       // Regular staff/nurse is STRICTLY LOCKED to their checklist portal, info, and roster page
@@ -2475,9 +2534,7 @@ Full administrative override and emergency clinical execution privileges have be
         targetUserId: currentUser.id
       };
       
-      const updatedNotifs = [newNotif, ...notifications];
-      setNotifications(updatedNotifs);
-      saveSetting("baheya_notifications", updatedNotifs);
+      dispatchEventNotification(newNotif);
     }
 
     playSpatialAudioContextTone("success");
@@ -4762,7 +4819,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
             
             <div className="relative z-10 w-full max-w-lg p-12 text-white text-start">
               <div className="mb-6 flex">
-                <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-md border border-white/20">
+                <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-md border border-white/20 inline-block">
                   <DynamicProfessionalLogo 
                     nameAr={hospitalSettings.nameAr} 
                     nameEn={hospitalSettings.nameEn} 
@@ -4770,7 +4827,8 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                     taglineEn={hospitalSettings.taglineEn} 
                     size="lg" 
                     isAr={language === "ar"}
-                    hideText={true} 
+                    hideText={false}
+                    dark={true}
                   />
                 </div>
               </div>
@@ -4825,7 +4883,8 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                   taglineEn={hospitalSettings.taglineEn} 
                   size="xl" 
                   isAr={language === "ar"}
-                  hideText={true} 
+                  hideText={false}
+                  dark={false}
                 />
               </div>
               <h1 className="text-3xl font-bold text-slate-800 tracking-tight">
@@ -4842,6 +4901,38 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
             </div>
 
             <div className="space-y-6">
+              {/* Specialized Portal Entry Switcher */}
+              <div className="grid grid-cols-2 gap-3 mb-6 no-print">
+                <button
+                  type="button"
+                  onClick={() => setGatewaySystem("his")}
+                  className={`p-3 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 transition-all cursor-pointer ${
+                    gatewaySystem === "his" 
+                      ? "border-blue-600 bg-blue-50/50 shadow-md transform -translate-y-1" 
+                      : "border-slate-100 bg-slate-50 hover:bg-slate-100/80 text-slate-400"
+                  }`}
+                >
+                  <Activity className={`w-6 h-6 ${gatewaySystem === "his" ? "text-blue-600" : "text-slate-400"}`} />
+                  <span className={`text-[11px] font-bold ${gatewaySystem === "his" ? "text-blue-900" : "text-slate-500"}`}>
+                    {language === "ar" ? "نظام إدارة المستشفى (HIS)" : "HIS Portal"}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGatewaySystem("wsd")}
+                  className={`p-3 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 transition-all cursor-pointer ${
+                    gatewaySystem === "wsd" 
+                      ? "border-pink-600 bg-pink-50/50 shadow-md transform -translate-y-1" 
+                      : "border-slate-100 bg-slate-50 hover:bg-slate-100/80 text-slate-400"
+                  }`}
+                >
+                  <Activity className={`w-6 h-6 ${gatewaySystem === "wsd" ? "text-pink-600" : "text-slate-400"}`} />
+                  <span className={`text-[11px] font-bold ${gatewaySystem === "wsd" ? "text-pink-900" : "text-slate-500"}`}>
+                    {language === "ar" ? "لوحة الإدارة (WSD)" : "WSD Console"}
+                  </span>
+                </button>
+              </div>
+
               {/* Custom Tab Switcher for Login / Signup */}
               {!recoveryMode && (
                 <div className="flex p-1 bg-slate-100/80 rounded-xl border border-slate-200/60 no-print">
@@ -5375,9 +5466,9 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
   }
 
   return (
-    <div className={`min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans ${language === "ar" ? "rtl" : "ltr"} print:block print:min-h-0 print:h-auto print:p-0 print:m-0`} dir={language === "ar" ? "rtl" : "ltr"}>
+    <div className={`min-h-screen flex flex-col md:flex-row font-sans ${language === "ar" ? "rtl" : "ltr"} ${gatewaySystem === "his" ? "bg-slate-950" : "bg-slate-50"} print:block print:min-h-0 print:h-auto print:p-0 print:m-0`} dir={language === "ar" ? "rtl" : "ltr"}>
       
-      <aside className={`no-print ${isSidebarOpen ? "w-full md:w-64" : "hidden"} bg-slate-900 text-slate-100 flex flex-col border-b md:border-b-0 md:border-r border-slate-800 shrink-0 md:sticky md:top-0 md:h-screen md:overflow-y-auto`}>
+      <aside className={`no-print ${isSidebarOpen && gatewaySystem !== "his" ? "w-full md:w-64" : "hidden"} bg-slate-900 text-slate-100 flex flex-col border-b md:border-b-0 md:border-r border-slate-800 shrink-0 md:sticky md:top-0 md:h-screen md:overflow-y-auto`}>
         <div className="p-5 border-b border-slate-800 flex items-center justify-between">
           <div>
             <h1 className="text-sm font-bold text-white font-sans">{language === "ar" ? hospitalSettings.portalTitleAr : hospitalSettings.portalTitleEn}</h1>
@@ -5699,21 +5790,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           </button>
           )}
 
-          {checkPermission("mod_infection_control") && (
-          <button
-            onClick={() => setActiveTab("infection_control")}
-            className={`w-full flex items-center gap-3 px-6 py-2.5 text-right text-xs font-semibold transition-colors ${
-              activeTab === "infection_control"
-                ? "bg-slate-800 border-r-4 border-rose-500 text-rose-400 font-bold"
-                : "text-slate-400 hover:bg-slate-800 hover:text-white"
-            }`}
-          >
-            <ShieldAlert className="h-4 w-4 shrink-0 text-rose-500" />
-            <span>{language === "ar" ? "مكافحة العدوى" : "Infection Control"}</span>
-          </button>
-          )}
 
-          {/* 7. Admin Dashboard - NEW */}
           <button
             onClick={() => setActiveTab("admin_dashboard")}
             className={`w-full flex items-center gap-3 px-6 py-2.5 text-right text-xs font-semibold transition-colors ${
@@ -5725,103 +5802,6 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
             <Database className="h-4 w-4 shrink-0 text-blue-500" />
             <span>{language === "ar" ? "لوحة الإدارة والدعم" : "Admin Dashboard"}</span>
           </button>
-
-          {/* Core Modules additions */}
-          {checkPermission("mod_his") && (
-            <button
-              onClick={() => setActiveTab("his")}
-              className={`w-full flex items-center gap-3 px-6 py-2.5 text-right text-xs font-semibold transition-colors ${
-                activeTab === "his" ? "bg-slate-800 border-r-4 border-emerald-500 text-emerald-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
-            >
-              <Activity className="h-4 w-4 shrink-0 text-emerald-500" />
-              <span>{language === "ar" ? "نظام إدارة المستشفى (HIS)" : "Hospital Information System"}</span>
-            </button>
-          )}
-
-          {checkPermission("mod_reception") && (
-            <button
-              onClick={() => setActiveTab("reception")}
-              className={`w-full flex items-center gap-3 px-6 py-2.5 text-right text-xs font-semibold transition-colors ${
-                activeTab === "reception" ? "bg-slate-800 border-r-4 border-indigo-500 text-indigo-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
-            >
-              <Users className="h-4 w-4 shrink-0 text-indigo-500" />
-              <span>{language === "ar" ? "الاستقبال والتسجيل" : "Reception & Registration"}</span>
-            </button>
-          )}
-
-          {checkPermission("mod_emr") && (
-            <button
-              onClick={() => setActiveTab("emr")}
-              className={`w-full flex items-center gap-3 px-6 py-2.5 text-right text-xs font-semibold transition-colors ${
-                activeTab === "emr" ? "bg-slate-800 border-r-4 border-purple-500 text-purple-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
-            >
-              <BookOpen className="h-4 w-4 shrink-0 text-purple-500" />
-              <span>{language === "ar" ? "الملف الطبي الإلكتروني (EMR)" : "Medical Record (EMR)"}</span>
-            </button>
-          )}
-
-          {checkPermission("mod_ward") && (
-            <button
-              onClick={() => setActiveTab("ward")}
-              className={`w-full flex items-center gap-3 px-6 py-2.5 text-right text-xs font-semibold transition-colors ${
-                activeTab === "ward" ? "bg-slate-800 border-r-4 border-emerald-500 text-emerald-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
-            >
-              <BedDouble className="h-4 w-4 shrink-0 text-emerald-500" />
-              <span>{language === "ar" ? "الأقسام الداخلية والمرضى" : "Inpatient Wards"}</span>
-            </button>
-          )}
-
-          {checkPermission("mod_ot") && (
-            <button
-              onClick={() => setActiveTab("ot")}
-              className={`w-full flex items-center gap-3 px-6 py-2.5 text-right text-xs font-semibold transition-colors ${
-                activeTab === "ot" ? "bg-slate-800 border-r-4 border-purple-500 text-purple-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
-            >
-              <Scissors className="h-4 w-4 shrink-0 text-purple-500" />
-              <span>{language === "ar" ? "العمليات الجراحية" : "Operating Theater"}</span>
-            </button>
-          )}
-
-          {checkPermission("mod_pharmacy") && (
-            <button
-              onClick={() => setActiveTab("pharmacy")}
-              className={`w-full flex items-center gap-3 px-6 py-2.5 text-right text-xs font-semibold transition-colors ${
-                activeTab === "pharmacy" ? "bg-slate-800 border-r-4 border-teal-500 text-teal-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
-            >
-              <Microscope className="h-4 w-4 shrink-0 text-teal-500" />
-              <span>{language === "ar" ? "الصيدلية والمستودعات" : "Pharmacy"}</span>
-            </button>
-          )}
-
-          {checkPermission("mod_billing") && (
-            <button
-              onClick={() => setActiveTab("billing")}
-              className={`w-full flex items-center gap-3 px-6 py-2.5 text-right text-xs font-semibold transition-colors ${
-                activeTab === "billing" ? "bg-slate-800 border-r-4 border-yellow-500 text-yellow-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
-            >
-              <Receipt className="h-4 w-4 shrink-0 text-yellow-500" />
-              <span>{language === "ar" ? "الفواتير والمطالبات المالية" : "Billing"}</span>
-            </button>
-          )}
-
-          {checkPermission("mod_ancillary") && (
-            <button
-              onClick={() => setActiveTab("ancillary")}
-              className={`w-full flex items-center gap-3 px-6 py-2.5 text-right text-xs font-semibold transition-colors ${
-                activeTab === "ancillary" ? "bg-slate-800 border-r-4 border-indigo-500 text-indigo-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
-            >
-              <FileDigit className="h-4 w-4 shrink-0 text-indigo-500" />
-              <span>{language === "ar" ? "لوحة الأشعة والمختبرات" : "LIS/RIS"}</span>
-            </button>
-          )}
 
           {/* Document Center */}
           <button
@@ -5894,7 +5874,10 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
               </button>
             )}
             <div 
-              onClick={() => setActiveTab("duty")}
+              onClick={() => {
+                if (gatewaySystem === "his") setActiveTab("his");
+                else setActiveTab("duty");
+              }}
               className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition select-none group"
               title={language === "ar" ? "الرئيسية والمتابعة اليومية" : "Go to Dashboard Home"}
             >
@@ -9482,7 +9465,13 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           )}
 
           {activeTab === "his" && (
-            <HospitalInformationSystem language={language} />
+            <HospitalInformationSystem 
+              language={language} 
+              currentUser={currentUser} 
+              systemUsers={systemUsers} 
+              hospitalSettings={hospitalSettings}
+              onLogout={handleLogout}
+            />
           )}
 
           {activeTab === "reception" && (
@@ -11297,9 +11286,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                   targetUserId: currentUser.id
                                 };
                                 {
-                                  const updatedNotifsList = [newNotification, ...notifications];
-                                  setNotifications(updatedNotifsList);
-                                  saveSetting("baheya_notifications", updatedNotifsList);
+                                  dispatchEventNotification(newNotification);
                                 }
 
                                 setWishReasonAr("");
@@ -11403,9 +11390,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                 targetTab: "roster"
                               };
                               {
-                                const updatedNotifsList = [newNotification, ...notifications];
-                                setNotifications(updatedNotifsList);
-                                saveSetting("baheya_notifications", updatedNotifsList);
+                                dispatchEventNotification(newNotification);
                               }
 
                               setWishReasonAr("");
@@ -11648,9 +11633,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                         targetTab: "profile",
                                         targetUserId: wish.employeeId
                                       };
-                                      const updatedNotifs = [newNotif, ...notifications];
-                                      setNotifications(updatedNotifs);
-                                      saveSetting("baheya_notifications", updatedNotifs);
+                                      dispatchEventNotification(newNotif);
 
                                       // 2. Add System log
                                       addSystemLog(`Supervisor rejected shift wish from ${wish.employeeNameEn} for Day ${wish.dayKey}.`, "warning");

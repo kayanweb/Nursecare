@@ -253,19 +253,36 @@ export default function MedicationLedger({ language }: MedicationLedgerProps) {
     setError(null);
     setMedication(null);
     try {
-        const response = await fetch("/api/ai/analyze-medication", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ search_query: queryInput }),
-        });
-        const data = await response.json();
+        let response;
+        try {
+            response = await fetch("/api/ai/analyze-medication", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ search_query: queryInput }),
+            });
+        } catch (fetchErr: any) {
+            console.warn("Fetch Network Error:", fetchErr?.message || fetchErr);
+            throw new Error(isAr ? "تعذر الاتصال بالخادم (خطأ في الشبكة)." : "Network connect error.");
+        }
+
+        let data;
+        try {
+            data = await response.json();
+        } catch (jsonErr: any) {
+            console.error("Failed to parse JSON response:", response.status, response.statusText);
+            const textResponse = await response.text();
+            console.error("Response Text:", textResponse);
+            throw new Error(`Server returned invalid data (${response.status}).`);
+        }
+
         if (data.success) {
             setMedication(data.medication);
         } else {
             setError(data.error || (isAr ? "حدث خطأ غير متوقع." : "An unexpected error occurred."));
         }
-    } catch (e) {
-        setError(isAr ? "تعذر الاتصال بالخادم. يرجى المحاولة لاحقاً." : "Failed to connect to server. Please try again later.");
+    } catch (e: any) {
+        console.error("analyzeMedication Error:", e);
+        setError(e.message || (isAr ? "تعذر الاتصال بالخادم. يرجى المحاولة لاحقاً." : "Failed to connect to server. Please try again later."));
     } finally {
         setLoading(false);
     }
@@ -317,19 +334,31 @@ export default function MedicationLedger({ language }: MedicationLedgerProps) {
     setInteractionResult(null);
 
     try {
-      const response = await fetch("/api/ai/check-interaction", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ med1, med2, lang: language }),
-      });
-      const data = await response.json();
+      let response;
+      try {
+        response = await fetch("/api/ai/check-interaction", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ med1, med2, lang: language }),
+        });
+      } catch (fetchErr) {
+        throw new Error(isAr ? "تعذر الاتصال بالخادم (خطأ في الشبكة)." : "Network connect error.");
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        throw new Error(`Server returned invalid data (${response.status}).`);
+      }
+
       if (data.success) {
         setInteractionResult(data.analysis);
       } else {
         setErrorInt(data.error || (isAr ? "حدث خطأ أثناء فحص التداخلات." : "An error occurred checking interactions."));
       }
-    } catch (e) {
-      setErrorInt(isAr ? "فشل الاتصال بالخادم لمطابقة التداخل الدوائي." : "Failed to contact database interaction resolver.");
+    } catch (e: any) {
+      setErrorInt(e.message || (isAr ? "فشل الاتصال بالخادم لمطابقة التداخل الدوائي." : "Failed to contact database interaction resolver."));
     } finally {
       setLoadingInt(false);
     }
@@ -342,19 +371,31 @@ export default function MedicationLedger({ language }: MedicationLedgerProps) {
     setIvResult(null);
 
     try {
-      const response = await fetch("/api/ai/iv-compatibility", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ drug1: drug1Iv, drug2: drug2Iv, fluid: fluidIv, lang: language }),
-      });
-      const data = await response.json();
+      let response;
+      try {
+        response = await fetch("/api/ai/iv-compatibility", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ drug1: drug1Iv, drug2: drug2Iv, fluid: fluidIv, lang: language }),
+        });
+      } catch (fetchErr) {
+        throw new Error("Network connect error.");
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        throw new Error(`Server returned invalid data (${response.status}).`);
+      }
+
       if (data.success) {
         setIvResult(data.result);
       } else {
         setErrorIv(data.error || "An error occurred.");
       }
-    } catch (e) {
-      setErrorIv("Failed to contact API.");
+    } catch (e: any) {
+      setErrorIv(e.message || "Failed to contact API.");
     } finally {
       setLoadingIv(false);
     }
@@ -367,19 +408,31 @@ export default function MedicationLedger({ language }: MedicationLedgerProps) {
     setCounselStatus(null);
     
     try {
-      const response = await fetch("/api/ai/medication-counseling", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ medication: counselInput, lang: language }),
-      });
-      const data = await response.json();
+      let response;
+      try {
+        response = await fetch("/api/ai/medication-counseling", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ medication: counselInput, lang: language }),
+        });
+      } catch (fetchErr) {
+        throw new Error("Network connect error.");
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        throw new Error(`Server returned invalid data (${response.status}).`);
+      }
+
       if (data.success) {
         setCounselStatus(data.counseling);
       } else {
         setErrorCounsel(data.error || "An error occurred.");
       }
-    } catch(e) {
-      setErrorCounsel("Failed to contact API");
+    } catch(e: any) {
+      setErrorCounsel(e.message || "Failed to contact API");
     } finally {
       setLoadingCounsel(false);
     }
