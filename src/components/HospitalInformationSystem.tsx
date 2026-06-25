@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
 import {
+  syncHISNotifications,
+  saveHISNotification,
+  deleteHISNotification,
+  syncHISMessages,
+  saveHISMessage
+} from "../lib/firestoreService";
+import {
   Users,
   Stethoscope,
   BedDouble,
@@ -127,6 +134,85 @@ export default function HospitalInformationSystem({
 }: HospitalInformationSystemProps) {
   const [isHISNotificationsOpen, setIsHISNotificationsOpen] = useState(false);
   const [isHISMessagesOpen, setIsHISMessagesOpen] = useState(false);
+
+  const [hisNotifications, setHISNotifications] = useState<any[]>([]);
+  const [hisMessages, setHISMessages] = useState<any[]>([]);
+  const [newHISMessageText, setNewHISMessageText] = useState("");
+
+  // Sync HIS-specific real-time Notifications and Messages
+  useEffect(() => {
+    const unsubNotifs = syncHISNotifications((data) => {
+      // Seed default mock clinical notifications if collection is empty
+      if (data.length === 0) {
+        const defaultNotifs = [
+          {
+            id: "notif-001",
+            titleAr: "نتائج المعمل جاهزة",
+            titleEn: "Lab Result Ready",
+            messageAr: "المريض: أحمد علي - نتائج صورة الدم الكاملة CBC جاهزة.",
+            messageEn: "Patient: Ahmed Ali - CBC results are ready.",
+            type: "info",
+            timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString()
+          },
+          {
+            id: "notif-002",
+            titleAr: "قيمة حرجة",
+            titleEn: "Critical Value",
+            messageAr: "المريض: سارة أحمد - ارتفاع حاد في انزيمات القلب Troponin.",
+            messageEn: "Patient: Sara Ahmed - High Troponin level detected.",
+            type: "error",
+            timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString()
+          }
+        ];
+        defaultNotifs.forEach(n => saveHISNotification(n));
+      } else {
+        setHISNotifications(data);
+      }
+    });
+
+    const unsubMessages = syncHISMessages((data) => {
+      if (data.length === 0) {
+        const defaultMessages = [
+          {
+            id: "msg-001",
+            senderNameAr: "د. سارة",
+            senderNameEn: "Dr. Sarah",
+            content: "Can you review patient 402? / هل يمكنك مراجعة المريض 402؟",
+            timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString()
+          }
+        ];
+        defaultMessages.forEach(m => saveHISMessage(m));
+      } else {
+        setHISMessages(data);
+      }
+    });
+
+    return () => {
+      unsubNotifs();
+      unsubMessages();
+    };
+  }, []);
+
+  const handleSendHISMessage = async () => {
+    if (!newHISMessageText.trim()) return;
+    const msgId = "hismsg-" + Date.now();
+    const newMsg = {
+      id: msgId,
+      senderNameAr: currentUser?.nameAr || "د. أحمد مصطفى",
+      senderNameEn: currentUser?.nameEn || "Dr. Ahmed Mostafa",
+      content: newHISMessageText,
+      timestamp: new Date().toISOString()
+    };
+    await saveHISMessage(newMsg);
+    setNewHISMessageText("");
+  };
+
+  const handleClearHISNotifications = async () => {
+    for (const notif of hisNotifications) {
+      await deleteHISNotification(notif.id);
+    }
+    toast.success(isAr ? "تم مسح جميع الإشعارات" : "All notifications cleared");
+  };
 
   const [activeModule, setActiveModule] = useState<string>(() => {
     return sessionStorage.getItem("hospital_his_activeModule") || "overview";
@@ -1523,57 +1609,114 @@ export default function HospitalInformationSystem({
               <div className="relative">
                 <div
                   className="relative cursor-pointer hover:text-slate-800 transition"
-                  onClick={() => setIsHISNotificationsOpen(!isHISNotificationsOpen)}
+                  onClick={() => {
+                    setIsHISNotificationsOpen(!isHISNotificationsOpen);
+                    setIsHISMessagesOpen(false);
+                  }}
                 >
                   <Bell className="w-5 h-5 text-rose-500" />
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center border border-white">
-                    2
-                  </span>
+                  {hisNotifications.length > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center border border-white">
+                      {hisNotifications.length}
+                    </span>
+                  )}
                 </div>
                 {isHISNotificationsOpen && (
                   <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden">
-                    <div className="p-3 border-b border-slate-100 bg-slate-50 font-bold text-xs text-slate-800">
-                      {isAr ? "إشعارات النظام الطبي" : "Clinical Notifications"}
+                    <div className="p-3 border-b border-slate-100 bg-slate-50 font-bold text-xs text-slate-800 flex justify-between items-center">
+                      <span>{isAr ? "إشعارات النظام الطبي" : "Clinical Notifications"}</span>
+                      {hisNotifications.length > 0 && (
+                        <button
+                          onClick={handleClearHISNotifications}
+                          className="text-[10px] text-rose-500 hover:underline font-semibold"
+                        >
+                          {isAr ? "مسح الكل" : "Clear All"}
+                        </button>
+                      )}
                     </div>
                     <div className="max-h-64 overflow-y-auto">
-                      <div className="p-3 border-b border-slate-50 hover:bg-slate-50 cursor-pointer">
-                        <div className="text-xs font-bold text-slate-800">Lab Result Ready</div>
-                        <div className="text-[10px] text-slate-500 mt-1">Patient: Ahmed Ali - CBC results are ready.</div>
-                      </div>
-                      <div className="p-3 border-b border-slate-50 hover:bg-slate-50 cursor-pointer">
-                        <div className="text-xs font-bold text-rose-600">Critical Value</div>
-                        <div className="text-[10px] text-slate-500 mt-1">Patient: Sara Ahmed - High Troponin.</div>
-                      </div>
-                    </div>
-                    <div className="p-2 text-center border-t border-slate-100 bg-slate-50 text-indigo-600 font-bold text-xs cursor-pointer hover:bg-slate-100 transition">
-                      {isAr ? "عرض الكل" : "View All"}
+                      {hisNotifications.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-slate-400">
+                          {isAr ? "لا توجد إشعارات جديدة" : "No new notifications"}
+                        </div>
+                      ) : (
+                        hisNotifications.map((n) => (
+                          <div key={n.id} className="p-3 border-b border-slate-50 hover:bg-slate-50 cursor-pointer">
+                            <div className="text-xs font-bold text-slate-800">
+                              {isAr ? n.titleAr : n.titleEn}
+                            </div>
+                            <div className="text-[10px] text-slate-500 mt-1">
+                              {isAr ? n.messageAr : n.messageEn}
+                            </div>
+                            <div className="text-[9px] text-slate-400 mt-1 text-left">
+                              {new Date(n.timestamp).toLocaleTimeString(isAr ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 )}
               </div>
+
               <div className="relative">
                 <div
                   className="relative cursor-pointer hover:text-slate-800 transition"
-                  onClick={() => setIsHISMessagesOpen(!isHISMessagesOpen)}
+                  onClick={() => {
+                    setIsHISMessagesOpen(!isHISMessagesOpen);
+                    setIsHISNotificationsOpen(false);
+                  }}
                 >
                   <MessageSquare className="w-5 h-5 text-[#0a4275]" />
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center border border-white">
-                    1
-                  </span>
+                  {hisMessages.length > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center border border-white">
+                      {hisMessages.length}
+                    </span>
+                  )}
                 </div>
                 {isHISMessagesOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                  <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden flex flex-col">
                     <div className="p-3 border-b border-slate-100 bg-slate-50 font-bold text-xs text-slate-800">
-                      {isAr ? "رسائل الطاقم الطبي" : "Clinical Messages"}
+                      {isAr ? "محادثات الطاقم الطبي" : "Clinical Team Chats"}
                     </div>
-                    <div className="max-h-64 overflow-y-auto">
-                      <div className="p-3 border-b border-slate-50 hover:bg-slate-50 cursor-pointer">
-                        <div className="text-xs font-bold text-slate-800">Dr. Sarah</div>
-                        <div className="text-[10px] text-slate-500 mt-1">Can you review patient 402?</div>
-                      </div>
+                    <div className="max-h-56 overflow-y-auto p-2 space-y-2 bg-slate-50 flex flex-col">
+                      {hisMessages.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-slate-400">
+                          {isAr ? "لا توجد رسائل سابقة" : "No previous messages"}
+                        </div>
+                      ) : (
+                        hisMessages.map((msg) => (
+                          <div key={msg.id} className="p-2 bg-white rounded-lg border border-slate-100 shadow-2xs">
+                            <div className="flex justify-between items-center text-[10px] font-semibold text-[#0a4275] mb-0.5">
+                              <span>{isAr ? msg.senderNameAr : msg.senderNameEn}</span>
+                              <span className="text-[8px] text-slate-400">
+                                {new Date(msg.timestamp).toLocaleTimeString(isAr ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <div className="text-xs text-slate-700 leading-relaxed font-medium">
+                              {msg.content}
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
-                    <div className="p-2 text-center border-t border-slate-100 bg-slate-50 text-indigo-600 font-bold text-xs cursor-pointer hover:bg-slate-100 transition">
-                      {isAr ? "عرض كل الرسائل" : "View All Messages"}
+                    <div className="p-2 border-t border-slate-100 bg-white flex gap-1 items-center">
+                      <input
+                        type="text"
+                        value={newHISMessageText}
+                        onChange={(e) => setNewHISMessageText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleSendHISMessage();
+                        }}
+                        placeholder={isAr ? "اكتب رسالة سريرية..." : "Type a clinical message..."}
+                        className="flex-1 text-xs px-2 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#0a4275]"
+                      />
+                      <button
+                        onClick={handleSendHISMessage}
+                        className="px-3 py-1.5 bg-[#0a4275] text-white font-bold text-[11px] rounded-lg hover:bg-opacity-95 transition"
+                      >
+                        {isAr ? "إرسال" : "Send"}
+                      </button>
                     </div>
                   </div>
                 )}

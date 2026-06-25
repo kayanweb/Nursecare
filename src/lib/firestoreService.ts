@@ -1708,6 +1708,73 @@ export async function deleteEmergencyTeam(id: string): Promise<void> {
   }
 }
 
+// 23.5 HIS Clinical Notifications & Messages (Real-time)
+export function syncHISNotifications(onData: (data: any[]) => void) {
+  const path = "hospital_his_notifications";
+  onData(mergeWithLocal([], path));
+  return onSnapshot(
+    collection(db, path),
+    (snapshot) => {
+      const list: any[] = [];
+      snapshot.forEach((doc) => list.push(doc.data()));
+      list.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
+      onData(mergeWithLocal(list, path));
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.LIST, path);
+      onData(getLocalStore(path));
+    }
+  );
+}
+
+export async function saveHISNotification(notification: any): Promise<void> {
+  const path = `hospital_his_notifications/${notification.id}`;
+  saveLocalItem("hospital_his_notifications", notification.id, notification);
+  try {
+    await setDoc(doc(db, "hospital_his_notifications", notification.id), notification);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+export async function deleteHISNotification(id: string): Promise<void> {
+  const path = `hospital_his_notifications/${id}`;
+  deleteLocalItem("hospital_his_notifications", id);
+  try {
+    await deleteDoc(doc(db, "hospital_his_notifications", id));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+export function syncHISMessages(onData: (data: any[]) => void) {
+  const path = "hospital_his_messages";
+  onData(mergeWithLocal([], path));
+  return onSnapshot(
+    collection(db, path),
+    (snapshot) => {
+      const list: any[] = [];
+      snapshot.forEach((doc) => list.push(doc.data()));
+      list.sort((a, b) => new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime());
+      onData(mergeWithLocal(list, path));
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.LIST, path);
+      onData(getLocalStore(path));
+    }
+  );
+}
+
+export async function saveHISMessage(message: any): Promise<void> {
+  const path = `hospital_his_messages/${message.id}`;
+  saveLocalItem("hospital_his_messages", message.id, message);
+  try {
+    await setDoc(doc(db, "hospital_his_messages", message.id), message);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
 // 24. HIS Modules (Real-time)
 export function syncPatients(onData: (data: any[]) => void) {
   const path = "hospital_his_patients";
