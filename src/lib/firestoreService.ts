@@ -1732,6 +1732,13 @@ export async function savePatient(patient: any): Promise<void> {
   catch (error) { handleFirestoreError(error, OperationType.WRITE, path); }
 }
 
+export async function deletePatient(id: string): Promise<void> {
+  const path = `hospital_his_patients/${id}`;
+  deleteLocalItem("hospital_his_patients", id);
+  try { await deleteDoc(doc(db, "hospital_his_patients", id)); }
+  catch (error) { handleFirestoreError(error, OperationType.DELETE, path); }
+}
+
 export function syncPrescriptions(onData: (data: any[]) => void) {
   const path = "hospital_his_prescriptions";
   onData(mergeWithLocal([], path));

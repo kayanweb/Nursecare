@@ -1,6 +1,6 @@
 import React, { createContext, useContext, ReactNode, useEffect, useState } from "react";
 import { useFirestoreSync } from "../hooks/useFirestoreSync";
-import { syncPatients, savePatient as firestoreSavePatient, syncPrescriptions, savePrescription as firestoreSavePrescription, syncInvoices, saveInvoice as firestoreSaveInvoice } from "../lib/firestoreService";
+import { syncPatients, savePatient as firestoreSavePatient, deletePatient as firestoreDeletePatient, syncPrescriptions, savePrescription as firestoreSavePrescription, syncInvoices, saveInvoice as firestoreSaveInvoice } from "../lib/firestoreService";
 
 export type Patient = {
   id: string;
@@ -35,6 +35,8 @@ export type Invoice = {
 interface HISState {
   patients: Patient[];
   addPatient: (p: Patient) => void;
+  updatePatient: (id: string, updates: Partial<Patient>) => void;
+  deletePatient: (id: string) => void;
   updatePatientStatus: (id: string, status: Patient["status"]) => void;
 
   prescriptions: Prescription[];
@@ -72,6 +74,17 @@ export function HISProvider({ children }: { children: ReactNode }) {
     firestoreSavePatient(p).catch(err => console.error("Cloud patient save error:", err));
   };
   
+  const updatePatient = (id: string, updates: Partial<Patient>) => {
+    const patient = patients.find(p => p.id === id);
+    if (patient) {
+      firestoreSavePatient({ ...patient, ...updates }).catch(err => console.error("Cloud patient save error:", err));
+    }
+  };
+
+  const deletePatient = (id: string) => {
+    firestoreDeletePatient(id).catch(err => console.error("Cloud patient delete error:", err));
+  };
+
   const updatePatientStatus = (id: string, status: Patient["status"]) => {
     const patient = patients.find(p => p.id === id);
     if (patient) {
@@ -103,7 +116,7 @@ export function HISProvider({ children }: { children: ReactNode }) {
 
   return (
     <HISContext.Provider value={{
-      patients, addPatient, updatePatientStatus,
+      patients, addPatient, updatePatient, deletePatient, updatePatientStatus,
       prescriptions, addPrescription, updatePrescriptionStatus,
       invoices, addInvoice, updateInvoiceStatus
     }}>

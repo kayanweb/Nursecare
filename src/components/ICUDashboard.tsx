@@ -267,6 +267,35 @@ export default function ICUDashboard({ language }: { language: "ar" | "en" }) {
                     ).toLocaleDateString()}
                   </span>
                 </div>
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                   <button onClick={() => toast.info(isAr ? "تسجيل دخول الرعاية" : "Admit to ICU")} className="text-[10px] bg-white/10 hover:bg-white/20 text-white font-bold px-2 py-1 rounded transition">
+                     {isAr ? "تسجيل دخول الرعاية" : "Admit to ICU"}
+                   </button>
+                   <button onClick={() => toast.info(isAr ? "مراقبة حيوية مستمرة (Monitor)" : "Continuous Monitor")} className="text-[10px] bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-100 font-bold px-2 py-1 rounded transition">
+                     {isAr ? "مراقبة حيوية مستمرة" : "Monitor"}
+                   </button>
+                   <button onClick={() => toast.info(isAr ? "أوامر الرعاية (ICU Orders)" : "ICU Orders")} className="text-[10px] bg-white/10 hover:bg-white/20 text-white font-bold px-2 py-1 rounded transition">
+                     {isAr ? "أوامر الرعاية (ICU Orders)" : "ICU Orders"}
+                   </button>
+                   <button onClick={() => toast.info(isAr ? "سوائل وريدية (IV Fluids)" : "IV Fluids & Drips")} className="text-[10px] bg-white/10 hover:bg-white/20 text-white font-bold px-2 py-1 rounded transition">
+                     {isAr ? "سوائل وريدية" : "IV Fluids"}
+                   </button>
+                   <button onClick={() => toast.info(isAr ? "جدول التمريض (Nursing Flow)" : "Nursing Flowsheet")} className="text-[10px] bg-white/10 hover:bg-white/20 text-white font-bold px-2 py-1 rounded transition">
+                     {isAr ? "جدول التمريض" : "Nursing Flow"}
+                   </button>
+                   <button onClick={() => toast.info(isAr ? "مؤشر الخطورة (Acuity Level)" : "Acuity Level")} className="text-[10px] bg-white/10 hover:bg-white/20 text-white font-bold px-2 py-1 rounded transition">
+                     {isAr ? "مؤشر الخطورة" : "Acuity Level"}
+                   </button>
+                   <button onClick={() => toast.info(isAr ? "نقل لجناح التنويم (Transfer out)" : "Transfer to Ward")} className="text-[10px] bg-blue-500/30 hover:bg-blue-500/50 text-blue-100 font-bold px-2 py-1 rounded transition">
+                     {isAr ? "نقل للتنويم" : "Transfer Out"}
+                   </button>
+                   <button onClick={() => toast.info(isAr ? "إعلان وفاة (Mortuary)" : "Declare Expiry")} className="text-[10px] bg-slate-900 hover:bg-black text-slate-300 font-bold px-2 py-1 rounded transition">
+                     {isAr ? "وفاة (Mortuary)" : "Mortuary"}
+                   </button>
+                   <button onClick={() => toast.error(isAr ? "إنعاش (Code Blue)" : "Code Blue!")} className="text-[10px] bg-rose-600 hover:bg-rose-700 text-white font-bold px-2 py-1 rounded transition w-full mt-1">
+                     {isAr ? "إنعاش (Code Blue)" : "Code Blue"}
+                   </button>
+                </div>
               </div>
 
               <div className="p-4 space-y-4">

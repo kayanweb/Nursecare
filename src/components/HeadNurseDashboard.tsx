@@ -9,7 +9,7 @@ interface Props {
 
 export default function HeadNurseDashboard({ language, onNavigate }: Props) {
   const isAr = language === "ar";
-  const [activeTab, setActiveTab] = useState<"handover" | "assignment" | "tasks" | "stock" | "admit">("handover");
+  const [activeTab, setActiveTab] = useState<"handover" | "assignment" | "tasks" | "stock" | "admit" | "incidents">("handover");
 
   return (
     <div className="p-4 md:p-6 bg-slate-50 min-h-screen text-right font-sans flex flex-col gap-6" dir={isAr ? "rtl" : "ltr"}>
@@ -61,6 +61,13 @@ export default function HeadNurseDashboard({ language, onNavigate }: Props) {
           >
             <ArrowRightLeft className="w-4 h-4" />
             {isAr ? "الدخول والخروج (ADT)" : "Admission Tracker"}
+          </button>
+          <button 
+            onClick={() => setActiveTab("incidents")}
+            className={`px-3 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 ${activeTab === "incidents" ? "bg-white text-pink-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            <ShieldAlert className="w-4 h-4" />
+            {isAr ? "الحوادث والتقييم" : "Incidents & Audits"}
           </button>
         </div>
       </div>
@@ -400,6 +407,27 @@ export default function HeadNurseDashboard({ language, onNavigate }: Props) {
                    </button>
                    <button className="bg-white border border-slate-300 text-slate-700 font-bold px-6 py-3 rounded-xl shadow-sm hover:bg-slate-50 transition w-full sm:w-auto">
                       {isAr ? "بدء إجراءات خروج مريض (Discharge)" : "Initiate Discharge Checklist"}
+                   </button>
+                   <button className="bg-sky-50 border border-sky-300 text-sky-700 font-bold px-6 py-3 rounded-xl shadow-sm hover:bg-sky-100 transition w-full sm:w-auto">
+                      {isAr ? "اعتماد نقل (Approve Transfer)" : "Approve Transfer"}
+                   </button>
+                </div>
+             </div>
+          )}
+
+          {activeTab === "incidents" && (
+             <div className="bg-white p-6 sm:p-12 rounded-2xl border border-slate-200 shadow-sm animate-fade-in text-center flex flex-col items-center justify-center min-h-[400px]">
+                <ShieldAlert className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <h3 className="font-black text-xl text-slate-800 mb-2">{isAr ? "مراجعة الحوادث والتقييمات" : "Review Incidents & Audits"}</h3>
+                <p className="text-slate-500 text-sm max-w-md mx-auto mb-8 font-medium">
+                  {isAr ? "مراجعة واعتماد تقارير الحوادث (OVR) وتقييمات الجودة للقسم." : "Review and approve incident reports (OVR) and ward quality audits."}
+                </p>
+                <div className="flex flex-col sm:flex-row justify-center gap-3 w-full sm:w-auto">
+                   <button className="bg-rose-600 text-white font-bold px-6 py-3 rounded-xl shadow-md hover:bg-rose-700 transition w-full sm:w-auto">
+                      {isAr ? "مراجعة الحوادث" : "Review Incidents"}
+                   </button>
+                   <button className="bg-slate-800 text-white font-bold px-6 py-3 rounded-xl shadow-sm hover:bg-slate-700 transition w-full sm:w-auto">
+                      {isAr ? "مراجعة التقييمات" : "Review Audits"}
                    </button>
                 </div>
              </div>

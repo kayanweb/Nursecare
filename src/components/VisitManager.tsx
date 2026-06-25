@@ -254,9 +254,14 @@ export default function VisitManager({ language }: { language: "ar" | "en" }) {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button className="bg-slate-100 text-slate-700 hover:bg-indigo-600 hover:text-white px-3 py-1.5 rounded font-bold text-[11px] transition shadow-sm border border-slate-200">
-                      {isAr ? "تفاصيل الزيارة" : "Inspect"}
-                    </button>
+                    <div className="flex justify-end gap-2">
+                       <button className="bg-slate-100 text-slate-700 hover:bg-indigo-600 hover:text-white px-3 py-1.5 rounded font-bold text-[11px] transition shadow-sm border border-slate-200">
+                         {isAr ? "تفاصيل" : "Inspect"}
+                       </button>
+                       <button className="bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white px-3 py-1.5 rounded font-bold text-[11px] transition shadow-sm border border-rose-200 disabled:opacity-50" disabled={visit.status === "Discharged"}>
+                         {isAr ? "إنهاء الزيارة" : "End Visit"}
+                       </button>
+                    </div>
                   </td>
                 </tr>
               ))}

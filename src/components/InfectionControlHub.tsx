@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { ShieldCheck, FileSignature, AlertTriangle, Bug, Activity, CheckCircle, Search, Calendar, MapPin, Eye, FileText, Send, RefreshCw, PlusCircle, History, Stethoscope, Droplet, Wind, ShieldAlert, Trash2, PieChart as PieChartIcon, TrendingUp } from "lucide-react";
+import { ShieldCheck, FileSignature, AlertTriangle, Bug, Activity, CheckCircle, Search, Calendar, MapPin, Eye, FileText, Send, RefreshCw, PlusCircle, History, Stethoscope, Droplet, Wind, ShieldAlert, Trash2, PieChart as PieChartIcon, TrendingUp, CheckSquare } from "lucide-react";
 import { toast } from "sonner";
 import { syncSetting, saveSetting, getSetting } from "../lib/firestoreService";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend } from "recharts";
@@ -126,7 +126,7 @@ export default function InfectionControlHub({ language, currentUser, systemUsers
     const allowedRoles = ["admin", "quality", "infection_control", "supervisor", "doctor"];
     const authorizerRole = (authorizer as any).role || "staff";
     
-    if (!allowedRoles.includes(authorizerRole) && currentUser?.role !== "admin") {
+    if (!allowedRoles.includes(authorizerRole) && (currentUser as any)?.role !== "admin") {
       toast.warning(isAr ? "عذراً، صلاحياتك لا تسمح باعتماد مكافحة العدوى." : "Insufficient privileges for infection control sign-off.");
       // Soft restriction for demo, we'll let it pass but warn
     }

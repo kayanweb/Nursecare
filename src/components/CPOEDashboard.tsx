@@ -12,6 +12,10 @@ import {
   CheckCircle,
   Clock,
   Bed,
+  Settings,
+  Edit,
+  Trash2,
+  X,
 } from "lucide-react";
 import { syncSetting, saveSetting } from "../lib/firestoreService";
 import { toast } from "sonner";
@@ -44,6 +48,10 @@ export default function OrderManagementEngine({
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("All");
+
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState<"add" | "edit">("add");
+  const [currentOrder, setCurrentOrder] = useState<Partial<Order>>({});
 
   useEffect(() => {
     const unsub = syncSetting("his_cpoe_orders", (data) => {
@@ -94,6 +102,56 @@ export default function OrderManagementEngine({
     });
     return () => unsub();
   }, []);
+
+  const handleDelete = async (id: string) => {
+    if (confirm(isAr ? "هل أنت متأكد من حذف هذا الطلب؟" : "Are you sure you want to delete this order?")) {
+      const next = orders.filter(o => o.id !== id);
+      setOrders(next);
+      await saveSetting("his_cpoe_orders", next);
+      toast.success(isAr ? "تم الحذف بنجاح" : "Deleted successfully");
+    }
+  };
+
+  const handleSaveModal = async () => {
+    if (!currentOrder.patientName || !currentOrder.orderName || !currentOrder.doctorId) {
+      toast.error(isAr ? "يرجى تعبئة الحقول الأساسية" : "Please fill required fields");
+      return;
+    }
+
+    let next: Order[];
+    if (modalMode === "add") {
+      next = [...orders, { 
+        ...currentOrder, 
+        id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+        createdAt: new Date().toISOString()
+      } as Order];
+    } else {
+      next = orders.map(o => o.id === currentOrder.id ? { ...o, ...currentOrder } as Order : o);
+    }
+    
+    setOrders(next);
+    await saveSetting("his_cpoe_orders", next);
+    setShowModal(false);
+    toast.success(isAr ? "تم حفظ الطلب بنجاح" : "Order saved successfully");
+  };
+
+  const openAddModal = () => {
+    setModalMode("add");
+    setCurrentOrder({
+      orderType: "Lab",
+      status: "Pending",
+      priority: "Routine",
+      mrn: "MRN-" + Math.floor(1000 + Math.random() * 9000),
+      visitId: "VST-" + Math.floor(100 + Math.random() * 900)
+    });
+    setShowModal(true);
+  };
+
+  const openEditModal = (o: Order) => {
+    setModalMode("edit");
+    setCurrentOrder(o);
+    setShowModal(true);
+  };
 
   const getOrderIcon = (type: string) => {
     switch (type) {
@@ -147,9 +205,84 @@ export default function OrderManagementEngine({
 
   return (
     <div
-      className="p-4 md:p-6 bg-slate-50 min-h-full"
+      className="p-4 md:p-6 bg-slate-50 min-h-full relative"
       dir={isAr ? "rtl" : "ltr"}
     >
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col">
+             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 className="font-black text-slate-800 text-lg">
+                  {modalMode === "add" 
+                    ? (isAr ? "إنشاء طلب طبي جديد" : "Create New Medical Order")
+                    : (isAr ? "تعديل الطلب" : "Edit Order")
+                  }
+                </h3>
+                <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-slate-200 rounded-full text-slate-500 transition">
+                  <X className="w-5 h-5" />
+                </button>
+             </div>
+             <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isAr ? "اسم المريض" : "Patient Name"}</label>
+                  <input type="text" className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" 
+                    value={currentOrder.patientName || ""} onChange={e => setCurrentOrder({...currentOrder, patientName: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isAr ? "الطبيب المعالج" : "Ordering MD"}</label>
+                  <input type="text" className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" 
+                    value={currentOrder.doctorId || ""} onChange={e => setCurrentOrder({...currentOrder, doctorId: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isAr ? "نوع الطلب" : "Order Category"}</label>
+                  <select className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none"
+                    value={currentOrder.orderType || ""} onChange={e => setCurrentOrder({...currentOrder, orderType: e.target.value as Order["orderType"]})}>
+                    <option value="Lab">Lab</option>
+                    <option value="Radiology">Radiology</option>
+                    <option value="Medication">Medication</option>
+                    <option value="Procedure">Procedure</option>
+                    <option value="Admission">Admission</option>
+                    <option value="Surgery">Surgery</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isAr ? "تفاصيل الطلب (الخدمة/الدواء)" : "Requested Item Details"}</label>
+                  <input type="text" className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" 
+                    value={currentOrder.orderName || ""} onChange={e => setCurrentOrder({...currentOrder, orderName: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isAr ? "حالة الطلب" : "Status"}</label>
+                  <select className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none"
+                    value={currentOrder.status || ""} onChange={e => setCurrentOrder({...currentOrder, status: e.target.value as Order["status"]})}>
+                    <option value="Pending">Pending</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isAr ? "درجة الأهمية" : "Priority"}</label>
+                  <select className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none"
+                    value={currentOrder.priority || ""} onChange={e => setCurrentOrder({...currentOrder, priority: e.target.value as Order["priority"]})}>
+                    <option value="Routine">Routine</option>
+                    <option value="Urgent">Urgent</option>
+                    <option value="STAT">STAT</option>
+                  </select>
+                </div>
+             </div>
+             <div className="p-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
+               <button onClick={() => setShowModal(false)} className="px-4 py-2 font-bold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition text-sm">
+                 {isAr ? "إلغاء" : "Cancel"}
+               </button>
+               <button onClick={handleSaveModal} className="px-4 py-2 font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition text-sm shadow-md">
+                 {isAr ? "حفظ الطلب" : "Save Order"}
+               </button>
+             </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-slate-200 pb-4">
         <div>
           <h2 className="text-2xl font-black text-slate-800 flex items-center gap-2">
@@ -219,7 +352,7 @@ export default function OrderManagementEngine({
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2 transition whitespace-nowrap hidden sm:flex">
+          <button onClick={openAddModal} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2 transition whitespace-nowrap hidden sm:flex">
             <Plus className="h-4 w-4" /> {isAr ? "إنشاء طلب جديد" : "New Order"}
           </button>
         </div>
@@ -244,6 +377,9 @@ export default function OrderManagementEngine({
                 </th>
                 <th className="px-4 py-4 text-center">
                   {isAr ? "مسار العمل" : "Workflow Status"}
+                </th>
+                <th className="px-4 py-4 text-right">
+                  {isAr ? "إجراء" : "Actions"}
                 </th>
               </tr>
             </thead>
@@ -311,6 +447,16 @@ export default function OrderManagementEngine({
                       )}
                       {order.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button onClick={() => openEditModal(order)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition" title={isAr ? "تعديل" : "Edit"}>
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDelete(order.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition" title={isAr ? "حذف" : "Delete"}>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

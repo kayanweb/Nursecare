@@ -9,6 +9,9 @@ import {
   Activity,
   FileText,
   ArrowRight,
+  Edit,
+  Trash2,
+  X
 } from "lucide-react";
 import { syncSetting, saveSetting } from "../lib/firestoreService";
 import { toast } from "sonner";
@@ -35,6 +38,10 @@ export default function ERDashboard({ language }: { language: "ar" | "en" }) {
   const isAr = language === "ar";
   const [patients, setPatients] = useState<ERCase[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState<"add" | "edit">("add");
+  const [currentCase, setCurrentCase] = useState<Partial<ERCase>>({});
 
   useEffect(() => {
     const unsub = syncSetting("his_er_cases", (data) => {
@@ -91,6 +98,59 @@ export default function ERDashboard({ language }: { language: "ar" | "en" }) {
     return () => unsub();
   }, []);
 
+  const handleDelete = async (id: string) => {
+    if (confirm(isAr ? "هل أنت متأكد من حذف هذه الحالة؟" : "Are you sure you want to delete this case?")) {
+      const next = patients.filter(p => p.id !== id);
+      setPatients(next);
+      await saveSetting("his_er_cases", next);
+      toast.success(isAr ? "تم الحذف بنجاح" : "Deleted successfully");
+    }
+  };
+
+  const handleSaveModal = async () => {
+    if (!currentCase.name || !currentCase.chiefComplaint) {
+      toast.error(isAr ? "يرجى إدخال اسم المريض والشكوى" : "Please enter patient name and complaint");
+      return;
+    }
+
+    let next: ERCase[];
+    if (modalMode === "add") {
+      next = [...patients, { 
+        ...currentCase, 
+        id: `ER-${Math.floor(1000 + Math.random() * 9000)}`,
+        mrn: currentCase.mrn || "UNKNOWN",
+        arrivalTime: new Date().toISOString(),
+        triageLevel: currentCase.triageLevel || 3,
+        status: currentCase.status || "Waiting Triage",
+        zone: currentCase.zone || "Waiting"
+      } as ERCase];
+    } else {
+      next = patients.map(p => p.id === currentCase.id ? { ...p, ...currentCase } as ERCase : p);
+    }
+    
+    setPatients(next);
+    await saveSetting("his_er_cases", next);
+    setShowModal(false);
+    toast.success(isAr ? "تم حفظ الحالة" : "Case saved");
+  };
+
+  const openAddModal = () => {
+    setModalMode("add");
+    setCurrentCase({
+      triageLevel: 3,
+      status: "Waiting Triage",
+      zone: "Waiting",
+      mrn: "MRN-" + Math.floor(1000 + Math.random() * 9000)
+    });
+    setShowModal(true);
+  };
+
+  const openEditModal = (c: ERCase) => {
+    setModalMode("edit");
+    setCurrentCase(c);
+    setShowModal(true);
+  };
+
   const getTriageColor = (level: number) => {
     switch (level) {
       case 1:
@@ -128,9 +188,91 @@ export default function ERDashboard({ language }: { language: "ar" | "en" }) {
 
   return (
     <div
-      className="p-4 md:p-6 bg-slate-50 min-h-full"
+      className="p-4 md:p-6 bg-slate-50 min-h-full relative"
       dir={isAr ? "rtl" : "ltr"}
     >
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col">
+             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 className="font-black text-slate-800 text-lg">
+                  {modalMode === "add" 
+                    ? (isAr ? "تسجيل مريض طوارئ" : "Register ER Patient")
+                    : (isAr ? "تعديل حالة الطوارئ" : "Edit ER Case")
+                  }
+                </h3>
+                <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-slate-200 rounded-full text-slate-500 transition">
+                  <X className="w-5 h-5" />
+                </button>
+             </div>
+             <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isAr ? "اسم المريض" : "Patient Name"}</label>
+                  <input type="text" className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-rose-500 outline-none" 
+                    value={currentCase.name || ""} onChange={e => setCurrentCase({...currentCase, name: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isAr ? "الرقم الطبي (MRN)" : "MRN"}</label>
+                  <input type="text" className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-rose-500 outline-none" 
+                    value={currentCase.mrn || ""} onChange={e => setCurrentCase({...currentCase, mrn: e.target.value})} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isAr ? "الشكوى الرئيسية" : "Chief Complaint"}</label>
+                  <input type="text" className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-rose-500 outline-none" 
+                    value={currentCase.chiefComplaint || ""} onChange={e => setCurrentCase({...currentCase, chiefComplaint: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isAr ? "مستوى الفرز (Triage)" : "Triage Level"}</label>
+                  <select className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-rose-500 outline-none"
+                    value={currentCase.triageLevel || 3} onChange={e => setCurrentCase({...currentCase, triageLevel: parseInt(e.target.value) as any})}>
+                    <option value={1}>1 - Resuscitation</option>
+                    <option value={2}>2 - Emergent</option>
+                    <option value={3}>3 - Urgent</option>
+                    <option value={4}>4 - Less Urgent</option>
+                    <option value={5}>5 - Non-Urgent</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isAr ? "المنطقة (Zone)" : "Zone"}</label>
+                  <select className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-rose-500 outline-none"
+                    value={currentCase.zone || "Waiting"} onChange={e => setCurrentCase({...currentCase, zone: e.target.value as ERCase["zone"]})}>
+                    <option value="Red">Red Zone</option>
+                    <option value="Yellow">Yellow Zone</option>
+                    <option value="Green">Green Zone</option>
+                    <option value="Waiting">Waiting Area</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isAr ? "حالة المريض" : "Patient Status"}</label>
+                  <select className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-rose-500 outline-none"
+                    value={currentCase.status || "Waiting Triage"} onChange={e => setCurrentCase({...currentCase, status: e.target.value as ERCase["status"]})}>
+                    <option value="Waiting Triage">Waiting Triage</option>
+                    <option value="In Triage">In Triage</option>
+                    <option value="Waiting Doctor">Waiting Doctor</option>
+                    <option value="In Treatment">In Treatment</option>
+                    <option value="Ready for Discharge">Ready for Discharge</option>
+                    <option value="Admitted">Admitted</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isAr ? "الطبيب المعالج" : "Assigned Doctor"}</label>
+                  <input type="text" className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-rose-500 outline-none" 
+                    value={currentCase.assignedDoctor || ""} onChange={e => setCurrentCase({...currentCase, assignedDoctor: e.target.value})} />
+                </div>
+             </div>
+             <div className="p-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
+               <button onClick={() => setShowModal(false)} className="px-4 py-2 font-bold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition text-sm">
+                 {isAr ? "إلغاء" : "Cancel"}
+               </button>
+               <button onClick={handleSaveModal} className="px-4 py-2 font-bold text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition text-sm shadow-md">
+                 {isAr ? "حفظ البيانات" : "Save Case"}
+               </button>
+             </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-slate-200 pb-4">
         <div>
           <h2 className="text-2xl font-black text-slate-800 flex items-center gap-2">
@@ -143,7 +285,7 @@ export default function ERDashboard({ language }: { language: "ar" | "en" }) {
               : "Triage & emergency patient routing"}
           </p>
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex items-center gap-3 w-full md:w-auto flex-wrap justify-end">
           <div className="text-right mr-4 hidden md:block">
             <div className="text-xs font-bold text-slate-400 uppercase">
               {isAr ? "إجمالي الحالات" : "Total ER Census"}
@@ -152,7 +294,36 @@ export default function ERDashboard({ language }: { language: "ar" | "en" }) {
               {patients.length}
             </div>
           </div>
-          <div className="relative flex-1 md:w-64">
+          <div className="flex flex-wrap gap-2 items-center mx-2 hidden lg:flex">
+             <button onClick={() => toast.info(isAr ? "تسجيل حالة جديدة" : "New Case Registration")} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2 py-1.5 rounded transition">
+               {isAr ? "تسجيل حالة جديدة" : "New Case"}
+             </button>
+             <button onClick={() => toast.info(isAr ? "تصنيف الحالة (L1/L2/L3)" : "Triage Level (L1/L2/L3)")} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2 py-1.5 rounded transition">
+               {isAr ? "تصنيف الحالة" : "Triage Level"}
+             </button>
+             <button onClick={() => toast.info(isAr ? "تخطيط القلب (ECG)" : "ECG Request")} className="text-[10px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-2 py-1.5 rounded transition">
+               {isAr ? "تخطيط القلب (ECG)" : "ECG"}
+             </button>
+             <button onClick={() => toast.info(isAr ? "جهاز التنفس" : "Ventilator Setup")} className="text-[10px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-2 py-1.5 rounded transition">
+               {isAr ? "جهاز التنفس" : "Ventilator"}
+             </button>
+             <button onClick={() => toast.info(isAr ? "محلول وريدي" : "IV Fluids")} className="text-[10px] bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2 py-1.5 rounded transition">
+               {isAr ? "محلول وريدي" : "IV Fluids"}
+             </button>
+             <button onClick={() => toast.info(isAr ? "أدوية الطوارئ" : "Emergency Meds")} className="text-[10px] bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-2 py-1.5 rounded transition">
+               {isAr ? "أدوية الطوارئ" : "ER Meds"}
+             </button>
+             <button onClick={() => toast.info(isAr ? "تقرير الإنعاش" : "Resuscitation Report")} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2 py-1.5 rounded transition">
+               {isAr ? "تقرير الإنعاش" : "Resuscitation Report"}
+             </button>
+          </div>
+          <button onClick={() => toast.error("Code Blue Activated! Emergency Team Notified.")} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2 transition whitespace-nowrap animate-pulse">
+            <Activity className="h-4 w-4" /> {isAr ? "نداء الطوارئ (Code Blue)" : "Code Blue"}
+          </button>
+          <button onClick={() => toast.warning("Rapid Response Team Notified.")} className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2 transition whitespace-nowrap">
+            <AlertCircle className="h-4 w-4" /> {isAr ? "استجابة سريعة (RRT)" : "Rapid Response"}
+          </button>
+          <div className="relative flex-1 md:w-48">
             <Search
               className={`absolute ${isAr ? "right-3" : "left-3"} top-2.5 h-4 w-4 text-slate-400`}
             />
@@ -164,7 +335,7 @@ export default function ERDashboard({ language }: { language: "ar" | "en" }) {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <button className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2 transition whitespace-nowrap">
+          <button onClick={openAddModal} className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2 transition whitespace-nowrap">
             <Plus className="h-4 w-4" /> {isAr ? "تسجيل سريع" : "Quick Reg"}
           </button>
         </div>
@@ -248,9 +419,14 @@ export default function ERDashboard({ language }: { language: "ar" | "en" }) {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button className="bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white px-3 py-1.5 rounded font-bold text-xs transition border border-indigo-200 hover:border-indigo-600">
-                        {isAr ? "الملف" : "Open EMR"}
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button onClick={() => openEditModal(patient)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition" title={isAr ? "تعديل" : "Edit"}>
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDelete(patient.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition" title={isAr ? "حذف" : "Delete"}>
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -272,3 +448,4 @@ export default function ERDashboard({ language }: { language: "ar" | "en" }) {
     </div>
   );
 }
+

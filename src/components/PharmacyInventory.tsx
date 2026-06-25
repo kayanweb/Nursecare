@@ -121,14 +121,51 @@ export default function PharmacyInventory({ language }: Props) {
                       <p className="text-xs text-indigo-800 font-bold mb-2 flex items-center gap-2">
                         <AlertTriangle className="w-4 h-4" /> {isAr ? "نظام التحذيرات الدوائية" : "Drug Interaction Check"}
                       </p>
-                      <p className="text-[10px] text-indigo-600 font-medium">No severe interactions found based on patient EMR state and allergies.</p>
+                      <div className="flex gap-2 mt-2">
+                         <button onClick={() => toast.info(isAr ? "فحص التفاعلات الدوائية" : "Check Drug Interactions")} className="text-[10px] bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold px-2 py-1.5 rounded transition">
+                           {isAr ? "التفاعلات الدوائية" : "Drug Interactions"}
+                         </button>
+                         <button onClick={() => toast.info(isAr ? "فحص الحساسية" : "Check Allergies")} className="text-[10px] bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold px-2 py-1.5 rounded transition">
+                           {isAr ? "الحساسية" : "Allergies"}
+                         </button>
+                      </div>
+                      <p className="text-[10px] text-indigo-600 font-medium mt-2">No severe interactions found based on patient EMR state and allergies.</p>
+                   </div>
+                   
+                   <div className="flex flex-wrap gap-2 mt-4">
+                      <button onClick={() => toast.info(isAr ? "مراجعة الروشتة" : "Review Prescription")} className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-lg transition border border-slate-200">
+                        {isAr ? "مراجعة الروشتة" : "Review Prescription"}
+                      </button>
+                      <button onClick={() => toast.success(isAr ? "موافقة الصيدلي" : "Pharmacist Approval")} className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-3 py-2 rounded-lg transition border border-emerald-200">
+                        {isAr ? "موافقة الصيدلي" : "Pharmacist Approval"}
+                      </button>
+                      <button onClick={() => toast.error(isAr ? "رفض الروشتة" : "Reject Prescription")} className="text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-3 py-2 rounded-lg transition border border-rose-200">
+                        {isAr ? "رفض الروشتة" : "Reject Rx"}
+                      </button>
+                      <button onClick={() => toast.info(isAr ? "إرسال استفسار للطبيب" : "Send Query to Doctor")} className="text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold px-3 py-2 rounded-lg transition border border-amber-200">
+                        {isAr ? "إرسال استفسار" : "Send Query"}
+                      </button>
+                      <button onClick={() => toast.info(isAr ? "تجهيز الدواء" : "Prepare Medication")} className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3 py-2 rounded-lg transition border border-indigo-200">
+                        {isAr ? "تجهيز الدواء" : "Prepare Meds"}
+                      </button>
+                      <button onClick={() => toast.info(isAr ? "صرف الدواء" : "Dispense Medication")} className="text-xs bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold px-3 py-2 rounded-lg transition border border-teal-200">
+                        {isAr ? "صرف الدواء" : "Dispense"}
+                      </button>
                    </div>
                 </div>
-                <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-between">
+                <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-between gap-2 flex-wrap">
                    <button className="text-slate-500 font-bold text-sm hover:text-slate-800">{isAr ? "تعديل الروشتة بالاتصال بالطبيب" : "Request Rx Change"}</button>
-                   <button disabled={!selectedRx} onClick={async () => { if (!selectedRx) return; await updatePrescriptionStatus(selectedRx.id, "dispensed"); toast.success(isAr ? "تم صرف الروشتة بنجاح!" : "Dispensed successfully!"); }} className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold py-2.5 px-6 rounded-xl shadow-sm transition flex items-center gap-2">
-                      <Printer className="w-4 h-4"/> {isAr ? "طباعة الباركود وتسعير الفاتورة" : "Print Labels & Bill Patient"}
-                   </button>
+                   <div className="flex gap-2">
+                     <button className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 px-4 rounded-xl shadow-sm transition text-xs flex items-center gap-2">
+                        {isAr ? "تعليم المريض" : "Patient Education"}
+                     </button>
+                     <button className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 px-4 rounded-xl shadow-sm transition text-xs flex items-center gap-2">
+                        {isAr ? "طباعة تعليمات" : "Print Instructions"}
+                     </button>
+                     <button disabled={!selectedRx} onClick={async () => { if (!selectedRx) return; await updatePrescriptionStatus(selectedRx.id, "dispensed"); toast.success(isAr ? "تم صرف الروشتة بنجاح وخصمها من المخزون!" : "Dispensed & deducted from stock!"); }} className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold py-2.5 px-6 rounded-xl shadow-sm transition flex items-center gap-2 text-xs">
+                        <Printer className="w-4 h-4"/> {isAr ? "طباعة الباركود والخصم من المخزون" : "Print Labels & Deduct Stock"}
+                     </button>
+                   </div>
                 </div>
              </div>
            </div>
@@ -136,9 +173,25 @@ export default function PharmacyInventory({ language }: Props) {
 
         {activeTab === "inventory" && (
            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 animate-fade-in">
-              <h3 className="font-black text-slate-800 border-b border-slate-100 pb-3 mb-6 flex items-center gap-2">
-                <Package className="w-5 h-5 text-teal-500" /> {isAr ? "بطاقة الصنف وحركة المخزون" : "Item Master & Stock Limits"}
-              </h3>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-100 pb-3 mb-6 gap-4">
+                 <h3 className="font-black text-slate-800 flex items-center gap-2">
+                   <Package className="w-5 h-5 text-teal-500" /> {isAr ? "بطاقة الصنف وحركة المخزون" : "Item Master & Stock Limits"}
+                 </h3>
+                 <div className="flex gap-2 flex-wrap">
+                    <button onClick={() => toast.info(isAr ? "إضافة دواء جديد" : "Add Medication")} className="text-[10px] bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-3 py-1.5 rounded transition">
+                      {isAr ? "إضافة دواء" : "Add Med"}
+                    </button>
+                    <button onClick={() => toast.info(isAr ? "إنشاء طلب شراء للمورد" : "Create PO")} className="text-[10px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3 py-1.5 rounded transition">
+                      {isAr ? "طلب شراء (PO)" : "Purchase Order"}
+                    </button>
+                    <button onClick={() => toast.info(isAr ? "جرد المخزون" : "Start Stock Take")} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded transition">
+                      {isAr ? "جرد المخزون" : "Stock Take"}
+                    </button>
+                    <button onClick={() => toast.info(isAr ? "تسوية الجرد" : "Stock Adjustment")} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded transition">
+                      {isAr ? "تسوية الجرد" : "Stock Adjustment"}
+                    </button>
+                 </div>
+              </div>
               
               <div className="overflow-x-auto">
                  <table className="w-full text-sm">
@@ -160,7 +213,12 @@ export default function PharmacyInventory({ language }: Props) {
                          <td className="py-3 px-4"><span className="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded font-bold">Medicines</span></td>
                          <td className="py-3 px-4 font-mono font-black text-teal-600">12,400 <span className="text-[10px] font-normal text-slate-500">Tabs</span></td>
                          <td className="py-3 px-4 font-mono font-bold">1.50 EGP</td>
-                         <td className="py-3 px-4"><button className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">Transfer</button></td>
+                         <td className="py-3 px-4 flex gap-1">
+                           <button onClick={() => toast.info(isAr ? "تعديل بيانات الدواء" : "Edit Item")} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-2 py-1 rounded">Edit</button>
+                           <button className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-2 py-1 rounded">Ledger</button>
+                           <button className="text-[10px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded transition">Transfer</button>
+                           <button className="text-[10px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded transition">Deduct</button>
+                         </td>
                        </tr>
                      ))}
                    </tbody>

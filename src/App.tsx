@@ -3769,6 +3769,7 @@ Full administrative override and emergency clinical execution privileges have be
     ) {
       // Regular staff/nurse is STRICTLY LOCKED to their checklist portal, info, and roster page
       if (
+        activeTab !== "home" &&
         activeTab !== "duty" &&
         activeTab !== "about" &&
         activeTab !== "distribution" &&
@@ -3780,19 +3781,19 @@ Full administrative override and emergency clinical execution privileges have be
         activeTab !== "medical_tools" &&
         activeTab !== "his"
       ) {
-        setActiveTab("duty");
+        setActiveTab("home");
       } else if (activeTab === "his") {
-        setActiveTab("duty");
+        setActiveTab("home");
       }
     } else if (role === "quality") {
       // Supervisors can see checklists (duty), history, analytics, and guide
       if (["settings", "it_panel", "his"].includes(activeTab)) {
-        setActiveTab("duty");
+        setActiveTab("home");
       }
     } else {
       // For admin roles, if they switched from HIS to WSD, but activeTab is still 'his', change it to 'duty' or something default
       if (activeTab === "his") {
-        setActiveTab("duty");
+        setActiveTab("home");
       }
     }
     // Admin, IT, and President have unrestricted access to all tabs (no redirects)
@@ -6174,6 +6175,11 @@ Full administrative override and emergency clinical execution privileges have be
     if (loginPasscode === expectedPin) {
       setCurrentUser(targetUser);
       setIsLoggedIn(true);
+      if (gatewaySystem === "his") {
+        setActiveTab("his");
+      } else {
+        setActiveTab("home");
+      }
       setLoginPasscode("");
       setLoginStaffId("");
       setLoginError(null);
@@ -6345,6 +6351,8 @@ Full administrative override and emergency clinical execution privileges have be
     sessionStorage.removeItem("hospital_currentUser");
     sessionStorage.removeItem("hospital_gatewaySystem");
     sessionStorage.removeItem("hospital_activeTab");
+    sessionStorage.removeItem("hospital_his_activeModule");
+    sessionStorage.removeItem("hospital_his_activeSubTab");
     setGatewaySystem("his");
     setActiveTab("duty");
   };
@@ -6809,7 +6817,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
       >
         {/* Left/Right Side Background Image Cover (Hidden on Mobile) */}
         {!recoveryMode && loginTab === "login" && (
-          <div className="hidden lg:flex lg:w-1/2 relative bg-slate-900 overflow-hidden items-center justify-center">
+          <div className="hidden lg:flex lg:w-1/2 relative bg-slate-50 overflow-hidden items-center justify-center">
             <div className="absolute inset-0 z-0">
               <img
                 src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2000&auto=format&fit=crop"
@@ -6951,11 +6959,11 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                   className={`p-3 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 transition-all cursor-pointer ${
                     gatewaySystem === "his"
                       ? "border-blue-600 bg-blue-50/50 shadow-md transform -translate-y-1"
-                      : "border-slate-100 bg-slate-50 hover:bg-slate-100/80 text-slate-400"
+                      : "border-slate-100 bg-slate-50 hover:bg-slate-100/80 text-slate-500"
                   }`}
                 >
                   <Activity
-                    className={`w-6 h-6 ${gatewaySystem === "his" ? "text-blue-600" : "text-slate-400"}`}
+                    className={`w-6 h-6 ${gatewaySystem === "his" ? "text-blue-600" : "text-slate-500"}`}
                   />
                   <span
                     className={`text-[11px] font-bold ${gatewaySystem === "his" ? "text-blue-900" : "text-slate-500"}`}
@@ -6971,11 +6979,11 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                   className={`p-3 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 transition-all cursor-pointer ${
                     gatewaySystem === "wsd"
                       ? "border-pink-600 bg-pink-50/50 shadow-md transform -translate-y-1"
-                      : "border-slate-100 bg-slate-50 hover:bg-slate-100/80 text-slate-400"
+                      : "border-slate-100 bg-slate-50 hover:bg-slate-100/80 text-slate-500"
                   }`}
                 >
                   <Activity
-                    className={`w-6 h-6 ${gatewaySystem === "wsd" ? "text-pink-600" : "text-slate-400"}`}
+                    className={`w-6 h-6 ${gatewaySystem === "wsd" ? "text-pink-600" : "text-slate-500"}`}
                   />
                   <span
                     className={`text-[11px] font-bold ${gatewaySystem === "wsd" ? "text-pink-900" : "text-slate-500"}`}
@@ -7043,7 +7051,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                   {recoveryStep === "enter_email" ? (
                     <div className="space-y-1.5">
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                      <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">
                         {language === "ar"
                           ? "البريد الإلكتروني المهني:"
                           : "Corporate Registered Email Address:"}
@@ -7068,7 +7076,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                         </p>
                       )}
                       <div className="space-y-1.5">
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                        <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">
                           {language === "ar"
                             ? "رمز المرور الجديد (الـ PIN كود - 4 إلى 6 أرقام):"
                             : "Type New Secret PIN (4 to 6 numeric digits):"}
@@ -7140,7 +7148,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div className="space-y-1">
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                      <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">
                         {language === "ar"
                           ? "الاسم بالكامل (بالعربية):"
                           : "Full Name (Arabic):"}
@@ -7160,7 +7168,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                      <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">
                         {language === "ar"
                           ? "الاسم بالكامل (بالانجليزية):"
                           : "Full Name (English):"}
@@ -7183,7 +7191,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div className="space-y-1">
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                      <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">
                         {language === "ar"
                           ? "البريد الإلكتروني المهني:"
                           : "Corporate Email Address:"}
@@ -7203,7 +7211,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                      <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">
                         {language === "ar"
                           ? "كود الدخول / اسم المستخدم:"
                           : "Login Code / Username ID:"}
@@ -7229,7 +7237,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div className="space-y-1">
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                      <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">
                         {language === "ar"
                           ? "الدور والمصنف الوظيفي:"
                           : "Clinical Role & Permission Level:"}
@@ -7289,7 +7297,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                      <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">
                         {language === "ar"
                           ? "القسم الطبي المقر للعمل:"
                           : "Designated Medical Department:"}
@@ -7314,7 +7322,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest">
                       {language === "ar"
                         ? "رمز المرور السري المطلوب (PIN من 4-6 أرقام):"
                         : "Secure Gate PIN Password (4-6 digits):"}
@@ -7356,9 +7364,9 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                   <button
                     type="submit"
-                    className="w-full py-2.5 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-extrabold shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
+                    className="w-full py-2.5 bg-slate-50 hover:bg-black text-white rounded-xl text-xs font-extrabold shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
                   >
-                    <Check className="h-4 w-4 text-emerald-400" />
+                    <Check className="h-4 w-4 text-emerald-600" />
                     <span>
                       {language === "ar"
                         ? "إنشاء حساب كادر وتثبيت الملف الفوري"
@@ -7576,11 +7584,11 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
               )}
 
               {activeLoginFeature && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50 backdrop-blur-md">
                   <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm relative">
                     <button
                       onClick={() => setActiveLoginFeature(null)}
-                      className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+                      className="absolute top-4 right-4 text-slate-500 hover:text-slate-600"
                     >
                       ×
                     </button>
@@ -7789,7 +7797,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
             </div>
           </div>
 
-          <div className="mt-8 pt-6 w-full max-w-sm mx-auto border-t border-slate-100 flex flex-col gap-1 items-center justify-center text-[10px] text-slate-400 font-mono text-center">
+          <div className="mt-8 pt-6 w-full max-w-sm mx-auto border-t border-slate-100 flex flex-col gap-1 items-center justify-center text-[10px] text-slate-500 font-mono text-center">
             <span>
               {hospitalSettings.nameEn || "Kayan"} Medical Cloud Storage Client
               v5.0
@@ -7811,7 +7819,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
         className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-6 text-center font-sans text-white border-8 border-rose-950 select-none"
         dir="rtl"
       >
-        <div className="max-w-2xl bg-slate-900 border-2 border-rose-600 rounded-3xl p-8 space-y-6 shadow-2xl relative">
+        <div className="max-w-2xl bg-slate-50 border-2 border-rose-600 rounded-3xl p-8 space-y-6 shadow-2xl relative">
           <div className="w-16 h-16 bg-rose-600 text-white rounded-full flex items-center justify-center mx-auto text-3xl animate-bounce">
             🚨
           </div>
@@ -7829,8 +7837,8 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
             </p>
           </div>
 
-          <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-4">
-            <p className="text-xs text-slate-400 font-bold">
+          <div className="p-4 bg-slate-950 rounded-2xl border border-slate-200 space-y-4">
+            <p className="text-xs text-slate-500 font-bold">
               لإيقاف قفل الطوارئ وإعادة تشغيل البورتات، أدخل الرمز السري للأدمن
               (PIN الافتراضي: 1234):
             </p>
@@ -7849,7 +7857,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                   }
                 }}
                 placeholder="PIN"
-                className="w-24 p-3 bg-slate-900 border border-slate-700 text-center text-xl font-bold font-mono rounded-xl outline-none focus:ring-2 focus:ring-rose-500 text-rose-400"
+                className="w-24 p-3 bg-slate-50 border border-slate-700 text-center text-xl font-bold font-mono rounded-xl outline-none focus:ring-2 focus:ring-rose-500 text-rose-400"
               />
             </div>
           </div>
@@ -7863,37 +7871,70 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
     );
   }
 
+  if (gatewaySystem === "his" || activeTab === "his") {
+    return (
+      <div
+        className={`h-screen w-screen overflow-hidden font-sans ${language === "ar" ? "rtl" : "ltr"}`}
+        dir={language === "ar" ? "rtl" : "ltr"}
+      >
+        <HospitalInformationSystem
+          language={language}
+          currentUser={currentUser}
+          systemUsers={systemUsers}
+          hospitalSettings={hospitalSettings}
+          departments={departments}
+          onLogout={handleLogout}
+          onLanguageToggle={() => setLanguage(language === "ar" ? "en" : "ar")}
+          onOpenNotifications={() => setIsBellOpen(!isBellOpen)}
+          onOpenMessages={() => {
+            setGatewaySystem("wsd");
+            setActiveTab("messaging");
+          }}
+          notifications={notifications}
+          setNotifications={setNotifications}
+          handleNotificationClick={handleNotificationClick}
+        />
+        <SmartAIAssistant language={language} currentUser={currentUser} />
+      </div>
+    );
+  }
+
   return (
     <div
       className={`min-h-screen flex flex-col md:flex-row font-sans ${language === "ar" ? "rtl" : "ltr"} ${gatewaySystem === "his" ? "bg-slate-950" : "bg-slate-50"} print:block print:min-h-0 print:h-auto print:p-0 print:m-0`}
       dir={language === "ar" ? "rtl" : "ltr"}
     >
       <aside
-        className={`no-print ${isSidebarOpen && gatewaySystem !== "his" ? "w-full md:w-64" : "hidden"} bg-slate-900 text-slate-100 flex flex-col border-b md:border-b-0 md:border-r border-slate-800 shrink-0 md:sticky md:top-0 md:h-screen md:overflow-y-auto`}
+        className={`no-print ${isSidebarOpen && gatewaySystem !== "his" ? "flex" : "hidden"} fixed inset-0 z-50 md:relative w-full md:w-64 bg-[#0a4275] text-white flex-col border-b md:border-b-0 shrink-0 md:h-screen overflow-y-auto`}
       >
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between">
-          <div>
-            <h1 className="text-sm font-bold text-white font-sans">
-              {language === "ar"
-                ? hospitalSettings.portalTitleAr
-                : hospitalSettings.portalTitleEn}
-            </h1>
-            <p className="text-[10px] text-slate-400 uppercase tracking-tighter">
-              {language === "ar"
-                ? hospitalSettings.premiumTitleAr
-                : hospitalSettings.premiumTitleEn}
-            </p>
+        <div className="h-16 flex items-center justify-between gap-3 px-4 sm:px-6 bg-[#06335c] border-b border-[#042442] shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-600/30 p-2 rounded-xl text-blue-400">
+              <Activity className="h-5 w-5 md:h-6 md:w-6" />
+            </div>
+            <div>
+              <h1 className="text-sm md:text-base font-black tracking-tight text-white leading-tight font-sans">
+                {language === "ar"
+                  ? hospitalSettings.portalTitleAr
+                  : hospitalSettings.portalTitleEn}
+              </h1>
+              <p className="text-[9px] text-blue-400 uppercase tracking-wider font-bold">
+                {language === "ar"
+                  ? hospitalSettings.premiumTitleAr
+                  : hospitalSettings.premiumTitleEn}
+              </p>
+            </div>
           </div>
           <button
             onClick={() => setIsSidebarOpen(false)}
-            className="md:hidden text-slate-400 hover:text-white"
+            className="md:hidden text-slate-500 hover:text-white"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* ACCESS MANAGEMENT: Interactive User & Admin switcher */}
-        <div className="p-4 border-b border-slate-800 bg-slate-950/40">
+        <div className="p-4 border-b border-[#042442] bg-[#06335c]/30">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-pink-600/20 border border-pink-500/50 text-pink-400 flex items-center justify-center font-bold text-xs ring-2 ring-pink-500/10 shrink-0">
               {currentUser.avatarInitials}
@@ -7905,7 +7946,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                 </p>
               </div>
 
-              <div className="text-[10px] text-slate-400 font-medium mt-1 leading-snug">
+              <div className="text-[10px] text-slate-500 font-medium mt-1 leading-snug">
                 <div className="flex items-center gap-1.5 text-slate-300">
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${currentUser.role === "admin" ? "bg-red-500 animate-pulse" : currentUser.role === "quality" ? "bg-amber-400" : currentUser.role === "president" ? "bg-purple-500" : "bg-emerald-400"}`}
@@ -7951,10 +7992,10 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           {checkPermission("mod_nursing_admin") && (
             <button
               onClick={() => setActiveTab("nursing_toolbox")}
-              className={`w-full flex items-center gap-3 px-6 py-4 text-right text-xs font-semibold transition-all border-l-4 ${
+              className={`w-full flex items-center gap-3 px-6 py-4 text-right text-xs font-semibold transition-all rounded-lg mx-2 ${
                 activeTab === "nursing_toolbox"
-                  ? "bg-slate-800 border-indigo-500 text-indigo-400 font-bold shadow-md shadow-indigo-900/20"
-                  : "border-transparent text-slate-400 hover:bg-slate-850 hover:text-white hover:border-indigo-500"
+                  ? "bg-blue-600 text-white font-bold shadow-md"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <ClipboardCheck
@@ -7972,10 +8013,10 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           {checkPermission("mod_supervisor") && (
             <button
               onClick={() => setActiveTab("supervisor")}
-              className={`w-full flex items-center gap-3 px-6 py-4 text-right text-xs font-semibold transition-all border-l-4 ${
+              className={`w-full flex items-center gap-3 px-6 py-4 text-right text-xs font-semibold transition-all rounded-lg mx-2 ${
                 activeTab === "supervisor"
-                  ? "bg-slate-800 border-indigo-500 text-indigo-400 font-bold shadow-md shadow-indigo-900/20"
-                  : "border-transparent text-slate-400 hover:bg-slate-850 hover:text-white hover:border-indigo-500"
+                  ? "bg-blue-600 text-white font-bold shadow-md"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <ShieldCheck
@@ -7996,10 +8037,10 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           {checkPermission("mod_medication") && (
             <button
               onClick={() => setActiveTab("medication_ledger")}
-              className={`w-full flex items-center gap-3 px-6 py-4 text-right text-xs font-semibold transition-all border-l-4 ${
+              className={`w-full flex items-center gap-3 px-6 py-4 text-right text-xs font-semibold transition-all rounded-lg mx-2 ${
                 activeTab === "medication_ledger"
-                  ? "bg-slate-800 border-indigo-500 text-indigo-400 font-bold shadow-md shadow-indigo-900/20"
-                  : "border-transparent text-slate-400 hover:bg-slate-850 hover:text-white hover:border-indigo-500"
+                  ? "bg-blue-600 text-white font-bold shadow-md"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <Database
@@ -8018,10 +8059,10 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                 setActiveTab("editor");
                 if (!editingRecord) handleCreateNew(selectedTemplate.id);
               }}
-              className={`w-full flex items-center gap-3 px-6 py-4 text-right text-xs font-semibold transition-all border-l-4 ${
+              className={`w-full flex items-center gap-3 px-6 py-4 text-right text-xs font-semibold transition-all rounded-lg mx-2 ${
                 activeTab === "editor"
-                  ? "bg-slate-800 border-pink-500 text-pink-400 font-bold shadow-md shadow-pink-900/20"
-                  : "border-transparent text-slate-400 hover:bg-slate-850 hover:text-white hover:border-pink-500"
+                  ? "bg-blue-600 text-white font-bold shadow-md"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <CheckSquare
@@ -8042,10 +8083,10 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           {checkPermission("mod_forms_dist") && (
             <button
               onClick={() => setActiveTab("distribution")}
-              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all border-l-4 ${
+              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all rounded-lg mx-2 ${
                 activeTab === "distribution"
-                  ? "bg-slate-800 border-pink-500 text-pink-400 font-bold shadow-md"
-                  : "border-transparent text-slate-400 hover:bg-slate-850 hover:text-white hover:border-pink-900"
+                  ? "bg-blue-600 text-white font-bold shadow-md"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <LayoutGrid className="h-4 w-4 shrink-0 text-pink-500" />
@@ -8064,10 +8105,10 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           {checkPermission("mod_roster_view") && (
             <button
               onClick={() => setActiveTab("roster")}
-              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all border-l-4 ${
+              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all rounded-lg mx-2 ${
                 activeTab === "roster"
-                  ? "bg-slate-800 border-pink-500 text-pink-400 font-bold shadow-md"
-                  : "border-transparent text-slate-400 hover:bg-slate-850 hover:text-white hover:border-pink-900"
+                  ? "bg-blue-600 text-white font-bold shadow-md"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <Calendar className="h-4 w-4 shrink-0 text-pink-500 animate-pulse" />
@@ -8085,10 +8126,10 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           {checkPermission("mod_roster_config") && (
             <button
               onClick={() => setActiveTab("roster_config")}
-              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all border-l-4 ${
+              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all rounded-lg mx-2 ${
                 activeTab === "roster_config"
-                  ? "bg-slate-800 border-pink-500 text-pink-400 font-bold shadow-md"
-                  : "border-transparent text-slate-400 hover:bg-slate-850 hover:text-white hover:border-pink-900"
+                  ? "bg-blue-600 text-white font-bold shadow-md"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <Settings className="h-4 w-4 shrink-0 text-amber-500" />
@@ -8102,10 +8143,10 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           {checkPermission("mod_meals") && (
             <button
               onClick={() => setActiveTab("meals")}
-              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all border-l-4 ${
+              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all rounded-lg mx-2 ${
                 activeTab === "meals"
-                  ? "bg-slate-800 border-orange-500 text-orange-400 font-bold shadow-md"
-                  : "border-transparent text-slate-400 hover:bg-slate-850 hover:text-white hover:border-orange-900"
+                  ? "bg-blue-600 text-white font-bold shadow-md"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <Coffee
@@ -8126,10 +8167,10 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           {checkPermission("mod_transport") && (
             <button
               onClick={() => setActiveTab("transport")}
-              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all border-l-4 ${
+              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all rounded-lg mx-2 ${
                 activeTab === "transport"
-                  ? "bg-slate-800 border-indigo-500 text-indigo-400 font-bold shadow-md"
-                  : "border-transparent text-slate-400 hover:bg-slate-850 hover:text-white hover:border-indigo-900"
+                  ? "bg-blue-600 text-white font-bold shadow-md"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <ArrowLeftRight
@@ -8148,10 +8189,10 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           {checkPermission("mod_quality") && (
             <button
               onClick={() => setActiveTab("analytics")}
-              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all border-l-4 ${
+              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all rounded-lg mx-2 ${
                 activeTab === "analytics"
-                  ? "bg-slate-800 border-pink-500 text-pink-400 font-bold shadow-md"
-                  : "border-transparent text-slate-400 hover:bg-slate-850 hover:text-white hover:border-pink-900"
+                  ? "bg-blue-600 text-white font-bold shadow-md"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <TrendingUp className="h-4 w-4 shrink-0 text-pink-500" />
@@ -8170,10 +8211,10 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           {checkPermission("mod_archives") && (
             <button
               onClick={() => setActiveTab("history")}
-              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all border-l-4 ${
+              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all rounded-lg mx-2 ${
                 activeTab === "history"
-                  ? "bg-slate-800 border-pink-500 text-pink-400 font-bold shadow-md"
-                  : "border-transparent text-slate-400 hover:bg-slate-850 hover:text-white hover:border-pink-900"
+                  ? "bg-blue-600 text-white font-bold shadow-md"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <FileSpreadsheet className="h-4 w-4 shrink-0 text-pink-500" />
@@ -8194,10 +8235,10 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           {checkPermission("mod_wsd_console") && (
             <button
               onClick={() => setActiveTab("it_panel")}
-              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all border-l-4 ${
+              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all rounded-lg mx-2 ${
                 activeTab === "it_panel"
-                  ? "bg-slate-800 border-pink-500 text-pink-400 font-bold shadow-md"
-                  : "border-transparent text-slate-400 hover:bg-slate-850 hover:text-white hover:border-pink-900"
+                  ? "bg-blue-600 text-white font-bold shadow-md"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <Database className="h-4 w-4 shrink-0 text-pink-500" />
@@ -8216,10 +8257,10 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           {checkPermission("mod_profile") && (
             <button
               onClick={() => setActiveTab("profile")}
-              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all border-l-4 ${
+              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all rounded-lg mx-2 ${
                 activeTab === "profile"
-                  ? "bg-slate-800 border-pink-500 text-pink-400 font-bold shadow-md"
-                  : "border-transparent text-slate-400 hover:bg-slate-850 hover:text-white hover:border-pink-900"
+                  ? "bg-blue-600 text-white font-bold shadow-md"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <User className="h-4 w-4 shrink-0 text-pink-500" />
@@ -8233,10 +8274,10 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           {checkPermission("mod_medical_tools") && (
             <button
               onClick={() => setActiveTab("medical_tools")}
-              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all border-l-4 ${
+              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all rounded-lg mx-2 ${
                 activeTab === "medical_tools"
-                  ? "bg-slate-800 border-rose-500 text-rose-400 font-bold shadow-md"
-                  : "border-transparent text-slate-400 hover:bg-slate-850 hover:text-white hover:border-rose-900"
+                  ? "bg-blue-600 text-white font-bold shadow-md"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <Stethoscope className="h-4 w-4 shrink-0 text-rose-500" />
@@ -8251,10 +8292,10 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           {checkPermission("mod_system_settings") && (
             <button
               onClick={() => setActiveTab("manage_templates")}
-              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all border-l-4 ${
+              className={`w-full flex items-center gap-3 px-6 py-3 text-right text-xs font-semibold transition-all rounded-lg mx-2 ${
                 activeTab === "manage_templates"
-                  ? "bg-slate-800 border-pink-500 text-pink-400 font-bold shadow-md"
-                  : "border-transparent text-slate-400 hover:bg-slate-850 hover:text-white hover:border-pink-900"
+                  ? "bg-blue-600 text-white font-bold shadow-md"
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
               <Settings className="h-4 w-4 shrink-0 text-pink-500" />
@@ -8273,7 +8314,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
               className={`w-full flex items-center gap-3 px-6 py-2.5 text-right text-xs font-semibold transition-colors ${
                 activeTab === "messaging"
                   ? "bg-slate-800 border-r-4 border-blue-500 text-blue-400 font-bold"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                  : "text-slate-500 hover:bg-slate-800 hover:text-white"
               }`}
             >
               <MessageSquare className="h-4 w-4 shrink-0 text-blue-500" />
@@ -8291,7 +8332,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
               className={`w-full flex items-center gap-3 px-6 py-2.5 text-right text-xs font-semibold transition-colors ${
                 activeTab === "evaluations"
                   ? "bg-slate-800 border-r-4 border-amber-500 text-amber-400 font-bold"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                  : "text-slate-500 hover:bg-slate-800 hover:text-white"
               }`}
             >
               <Star className="h-4 w-4 shrink-0 text-amber-500" />
@@ -8306,7 +8347,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
             className={`w-full flex items-center gap-3 px-6 py-2.5 text-right text-xs font-semibold transition-colors ${
               activeTab === "admin_dashboard"
                 ? "bg-slate-800 border-r-4 border-blue-500 text-blue-400 font-bold"
-                : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                : "text-slate-500 hover:bg-slate-800 hover:text-white"
             }`}
           >
             <Database className="h-4 w-4 shrink-0 text-blue-500" />
@@ -8321,7 +8362,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
             className={`w-full flex items-center gap-3 px-6 py-2.5 text-right text-xs font-semibold transition-colors ${
               activeTab === "document_center"
                 ? "bg-slate-800 border-r-4 border-pink-500 text-pink-400 font-bold"
-                : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                : "text-slate-500 hover:bg-slate-800 hover:text-white"
             }`}
           >
             <Folder className="h-4 w-4 shrink-0 text-pink-500" />
@@ -8343,13 +8384,13 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
         {/* Database offline status container */}
         <div className="p-4 border-t border-slate-800">
-          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+          <div className="bg-slate-950 p-4 rounded-xl border border-slate-200">
             <p className="text-[10px] text-slate-500 mb-1">
               {language === "ar"
                 ? "قاعدة البيانات والمزامنة السحابية"
                 : "Cloud Sync Database Gateway"}
             </p>
-            <div className="flex items-center text-emerald-400 text-xs font-semibold gap-2">
+            <div className="flex items-center text-emerald-600 text-xs font-semibold gap-2">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -8371,7 +8412,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
             </div>
 
             {/* Database backups */}
-            <div className="mt-3 flex items-center justify-between gap-2 text-[10px] border-t border-slate-800 pt-2 text-slate-400 font-mono">
+            <div className="mt-3 flex items-center justify-between gap-2 text-[10px] border-t border-slate-800 pt-2 text-slate-500 font-mono">
               <button
                 onClick={handleExportBackup}
                 className="hover:text-white flex items-center gap-1 transition"
@@ -8397,7 +8438,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
       <div className="flex-1 flex flex-col min-w-0 md:h-screen md:overflow-hidden print:block print:min-w-full print:w-full print:p-0 print:m-0">
         {/* Top Header Bar - Highly Advanced Glassmorphism */}
         <header
-          className={`no-print sticky top-0 bg-white/70 backdrop-blur-xl border-b border-white/50 flex flex-col md:flex-row items-center justify-between px-6 py-3 gap-4 shadow-[0_4px_30px_rgba(0,0,0,0.05)] z-40 text-right transition-all ${gatewaySystem === "his" ? "hidden" : ""}`}
+          className={`no-print sticky top-0 min-h-[64px] bg-white border-b border-slate-200 flex flex-col md:flex-row items-center justify-between px-4 sm:px-6 py-2 md:py-0 gap-4 z-40 text-right transition-all ${gatewaySystem === "his" ? "hidden" : ""}`}
         >
           <div className="flex items-center gap-3">
             {!isSidebarOpen && (
@@ -8414,7 +8455,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
             <div
               onClick={() => {
                 if (gatewaySystem === "his") setActiveTab("his");
-                else setActiveTab("duty");
+                else setActiveTab("home");
               }}
               className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition select-none group"
               title={
@@ -8467,7 +8508,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                 <select
                   value={selectedShift}
                   disabled={true}
-                  className="bg-black/20 text-emerald-400 font-extrabold text-xs rounded border border-white/5 px-2 py-0.5 outline-none cursor-not-allowed font-sans backdrop-blur-sm"
+                  className="bg-black/20 text-emerald-600 font-extrabold text-xs rounded border border-slate-100 px-2 py-0.5 outline-none cursor-not-allowed font-sans backdrop-blur-sm"
                 >
                   {CLINICAL_SHIFTS.map((cs) => (
                     <option key={cs.id} value={cs.id}>
@@ -8575,7 +8616,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
               {isBellOpen && (
                 <div className="absolute ltr:right-0 rtl:left-0 mt-2 w-[285px] xs:w-[320px] sm:w-[360px] max-w-[calc(100vw-32px)] bg-white/95 backdrop-blur-xl border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden transition-all duration-200 ltr:origin-top-right rtl:origin-top-left flex flex-col max-h-[420px]">
-                  <div className="px-4 py-3 bg-slate-900/5 backdrop-blur-md border-b border-slate-200/50 flex items-center justify-between">
+                  <div className="px-4 py-3 bg-slate-50/5 backdrop-blur-md border-b border-slate-200/50 flex items-center justify-between">
                     <h4 className="text-[11px] font-black text-slate-800 flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
                       {language === "ar"
@@ -8639,7 +8680,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                         return false;
                       });
                       return visibleNotifs.length === 0 ? (
-                        <div className="p-6 text-center text-xs text-slate-400 font-medium">
+                        <div className="p-6 text-center text-xs text-slate-500 font-medium">
                           {language === "ar"
                             ? "الوضع آمن ومستقر حالياً"
                             : "All clear. No active alerts."}
@@ -8756,7 +8797,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                           : "More about Spark quota limits & pricing ↗"}
                       </span>
                     </a>
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-[10px] text-slate-500">
                       {language === "ar"
                         ? "* سيتم إعادة تصفير العداد المجاني تلقائياً بحلول يوم غد."
                         : "* Free quota tier counters reset automatically every day."}
@@ -8810,7 +8851,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           {/* Quick Informative Statistics summary cards */}
           <div className="hidden">
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-sans mb-1">
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-sans mb-1">
                 {language === "ar"
                   ? "السجلات الإجمالية المحفوظة"
                   : "Saved Archived Logs"}
@@ -8821,7 +8862,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
             </div>
 
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-sans mb-1">
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-sans mb-1">
                 {language === "ar"
                   ? "خيارات النماذج والجرودات المتاحة"
                   : "Total Template Sheets"}
@@ -8833,7 +8874,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
             </div>
 
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-sans mb-1">
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-sans mb-1">
                 {language === "ar"
                   ? "كود المستند النشط"
                   : "Active Form Reference"}
@@ -8844,7 +8885,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
             </div>
 
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-sans mb-1">
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-sans mb-1">
                 {language === "ar"
                   ? "الوضع النشط للصلاحية"
                   : "User Authorization Status"}
@@ -8857,6 +8898,117 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
               </div>
             </div>
           </div>
+
+          {activeTab === "home" && (
+            <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
+              <div className="bg-gradient-to-l from-[#0a4275] to-[#0d5c9e] rounded-3xl p-6 md:p-10 text-white shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-pink-500 opacity-10 rounded-full blur-2xl translate-y-1/4 -translate-x-1/4"></div>
+                <div className="relative z-10 text-right">
+                  <h1 className="text-2xl md:text-4xl font-black mb-3 text-transparent bg-clip-text bg-gradient-to-l from-white to-blue-200">
+                    {language === "ar" ? "بوابة الإدارة والأنظمة الشاملة" : "Comprehensive Management Portal"}
+                  </h1>
+                  <p className="text-blue-100 text-sm md:text-base max-w-2xl ml-auto leading-relaxed">
+                    {language === "ar" 
+                      ? "لوحة تحكم مركزية للوصول السريع إلى جميع أنظمة المستشفى الإدارية والتشغيلية بتصميم عصري ومتجاوب."
+                      : "Centralized dashboard for quick access to all hospital administrative and operational systems with a modern responsive design."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 mt-8">
+                {checkPermission("mod_nursing_admin") && (
+                  <div onClick={() => setActiveTab("nursing_toolbox")} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-400 transition-all cursor-pointer group flex flex-col items-end text-right h-full">
+                    <div className="bg-blue-50 text-blue-600 p-3 rounded-xl mb-4 group-hover:scale-110 transition-transform">
+                      <ClipboardCheck className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-lg mb-2">{language === "ar" ? "أدوات التمريض الإدارية" : "Nursing Admin Tools"}</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed mt-auto">
+                      {language === "ar" ? "إدارة التمريض والعمليات اليومية بشكل متكامل." : "Manage nursing operations comprehensively."}
+                    </p>
+                  </div>
+                )}
+                {checkPermission("mod_supervisor") && (
+                  <div onClick={() => setActiveTab("supervisor")} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-xl hover:border-emerald-400 transition-all cursor-pointer group flex flex-col items-end text-right h-full">
+                    <div className="bg-emerald-50 text-emerald-600 p-3 rounded-xl mb-4 group-hover:scale-110 transition-transform">
+                      <ShieldCheck className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-lg mb-2">{language === "ar" ? "لوحة المشرف العام" : "Supervisor Dashboard"}</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed mt-auto">
+                      {language === "ar" ? "متابعة وإشراف على جميع الأقسام التشغيلية." : "Monitor and supervise all operational departments."}
+                    </p>
+                  </div>
+                )}
+                {checkPermission("mod_forms_fill") && (
+                  <div onClick={() => { setActiveTab("editor"); if (!editingRecord) handleCreateNew(selectedTemplate.id); }} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-xl hover:border-pink-400 transition-all cursor-pointer group flex flex-col items-end text-right h-full">
+                    <div className="bg-pink-50 text-pink-600 p-3 rounded-xl mb-4 group-hover:scale-110 transition-transform">
+                      <CheckSquare className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-lg mb-2">{language === "ar" ? "السجلات السريرية" : "Clinical Ledger"}</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed mt-auto">
+                      {language === "ar" ? "تعبئة وجرد الشيتات والنماذج الطبية." : "Fill and manage medical forms and sheets."}
+                    </p>
+                  </div>
+                )}
+                {checkPermission("mod_roster_view") && (
+                  <div onClick={() => setActiveTab("roster")} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-xl hover:border-purple-400 transition-all cursor-pointer group flex flex-col items-end text-right h-full">
+                    <div className="bg-purple-50 text-purple-600 p-3 rounded-xl mb-4 group-hover:scale-110 transition-transform">
+                      <Calendar className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-lg mb-2">{language === "ar" ? "جداول النوبتجيات" : "Shifts Roster"}</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed mt-auto">
+                      {language === "ar" ? "إدارة وعرض جداول الورديات للكادر." : "Manage and view staff shift schedules."}
+                    </p>
+                  </div>
+                )}
+                {checkPermission("mod_meals") && (
+                  <div onClick={() => setActiveTab("meals")} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-xl hover:border-orange-400 transition-all cursor-pointer group flex flex-col items-end text-right h-full">
+                    <div className="bg-orange-50 text-orange-600 p-3 rounded-xl mb-4 group-hover:scale-110 transition-transform">
+                      <Coffee className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-lg mb-2">{language === "ar" ? "إدارة التغذية" : "Nutrition"}</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed mt-auto">
+                      {language === "ar" ? "سجلات التغذية ووجبات المرضى." : "Patient nutrition and meal logs."}
+                    </p>
+                  </div>
+                )}
+                {checkPermission("mod_transport") && (
+                  <div onClick={() => setActiveTab("transport")} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-xl hover:border-indigo-400 transition-all cursor-pointer group flex flex-col items-end text-right h-full">
+                    <div className="bg-indigo-50 text-indigo-600 p-3 rounded-xl mb-4 group-hover:scale-110 transition-transform">
+                      <ArrowLeftRight className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-lg mb-2">{language === "ar" ? "حركة النقل" : "Transport"}</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed mt-auto">
+                      {language === "ar" ? "حركة نقل المرضى بين الأقسام." : "Patient transport between departments."}
+                    </p>
+                  </div>
+                )}
+                {checkPermission("mod_quality") && (
+                  <div onClick={() => setActiveTab("analytics")} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-xl hover:border-rose-400 transition-all cursor-pointer group flex flex-col items-end text-right h-full">
+                    <div className="bg-rose-50 text-rose-600 p-3 rounded-xl mb-4 group-hover:scale-110 transition-transform">
+                      <TrendingUp className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-lg mb-2">{language === "ar" ? "الجودة والتحليلات" : "Quality Analytics"}</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed mt-auto">
+                      {language === "ar" ? "لوحة تحليلات الجودة والأداء." : "Quality and performance analytics dashboard."}
+                    </p>
+                  </div>
+                )}
+                {checkPermission("mod_wsd_console") && (
+                  <div onClick={() => setActiveTab("it_panel")} className="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-md hover:shadow-xl hover:border-blue-500 transition-all cursor-pointer group flex flex-col items-end text-right h-full relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 opacity-10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+                    <div className="bg-slate-800 text-blue-400 p-3 rounded-xl mb-4 group-hover:scale-110 transition-transform relative z-10">
+                      <Database className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-bold text-white text-lg mb-2 relative z-10">{language === "ar" ? "لوحة الإدارة والدعم (IT)" : "IT Console"}</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed mt-auto relative z-10">
+                      {language === "ar" ? "إدارة الصلاحيات وقواعد البيانات السحابية." : "Manage permissions and cloud databases."}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* TAB 0: Daily Unit Duty & Checklist Portal - Designed for Unit Entrance, Crew Checklists & Nursing Supervisor Signoffs */}
           {activeTab === "supervisor" && (
@@ -9119,7 +9271,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                   <div className="bg-gradient-to-l from-slate-900 via-slate-800 to-pink-950 text-white p-6 rounded-2xl shadow-md border border-slate-700/50 flex flex-col gap-6">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                       <div className="space-y-1.5 flex-1 select-none">
-                        <div className="bg-pink-505/20 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-pink-300 font-extrabold text-[10px] uppercase tracking-wide border border-pink-500/30">
+                        <div className="bg-pink-505/20 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-pink-600 font-extrabold text-[10px] uppercase tracking-wide border border-pink-500/30">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
                           {language === "ar"
                             ? "البوابة الطبية النشطة لكامل المستشفى"
@@ -9153,7 +9305,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                         onClick={() => setActiveTab("ward")}
                         className="bg-white/5 hover:bg-white/10 border border-white/10 hover:border-emerald-500/30 rounded-xl p-3 flex flex-col items-center justify-center gap-2.5 group transition-all"
                       >
-                        <BedDouble className="h-6 w-6 text-emerald-400 group-hover:scale-110 transition-transform transform" />
+                        <BedDouble className="h-6 w-6 text-emerald-600 group-hover:scale-110 transition-transform transform" />
                         <span className="text-[10px] font-bold text-slate-300 group-hover:text-emerald-100 uppercase tracking-widest leading-tight text-center">
                           {language === "ar"
                             ? "المرضى والأقسام الداخلي"
@@ -9165,7 +9317,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                         className="bg-white/5 hover:bg-white/10 border border-white/10 hover:border-pink-500/30 rounded-xl p-3 flex flex-col items-center justify-center gap-2.5 group transition-all"
                       >
                         <Pill className="h-6 w-6 text-pink-400 group-hover:scale-110 transition-transform transform" />
-                        <span className="text-[10px] font-bold text-slate-300 group-hover:text-pink-100 uppercase tracking-widest leading-tight text-center">
+                        <span className="text-[10px] font-bold text-slate-300 group-hover:text-slate-900 uppercase tracking-widest leading-tight text-center">
                           {language === "ar"
                             ? "متابعة عهد الأدوية"
                             : "Medication Ledger"}
@@ -9281,7 +9433,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                       <div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                           {language === "ar"
                             ? "الإجمالي النشط للوحدات المراقبة"
                             : "Total Monitored Units"}
@@ -9298,7 +9450,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                     <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                       <div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                           {language === "ar"
                             ? "شيك ليست مكملة (بانتظار الإشراف)"
                             : "Completed (Pending Audit)"}
@@ -9315,7 +9467,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                     <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                       <div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                           {language === "ar"
                             ? "شيك ليست معتمدة ومحققة وموقعة"
                             : "Audited & Signed Off"}
@@ -9472,7 +9624,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                     <div className="lg:col-span-1 space-y-6">
                       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-4">
                         <div>
-                          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest font-sans flex items-center gap-1.5 justify-end">
+                          <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest font-sans flex items-center gap-1.5 justify-end">
                             <span>بوابة دخول واستهلال وتصديق الوحدات</span>
                             <LayoutGrid className="h-4.5 w-4.5 text-pink-600 shrink-0" />
                           </h3>
@@ -9844,7 +9996,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                   ? "لا توجد مهام ديوتي مخصصة لهذه الوحدة حالياً."
                                   : "No specific daily duty tasks initialized for this unit yet."}
                               </p>
-                              <p className="text-[10px] text-slate-400 leading-tight">
+                              <p className="text-[10px] text-slate-500 leading-tight">
                                 {language === "ar"
                                   ? "طاقم الجودة ومديري التمريض يمكنهم إضافة وتوليد مهام مخصصة فوراً باستخدام اللوحة بالأسفل."
                                   : "Quality staff & administrators can create and assign dynamic tasks using the control form below."}
@@ -9889,7 +10041,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                             : task.taskEn}
                                         </span>
                                       </div>
-                                      <p className="text-[10.5px] text-slate-400 font-medium">
+                                      <p className="text-[10.5px] text-slate-500 font-medium">
                                         {language === "ar"
                                           ? task.taskEn
                                           : task.taskAr}
@@ -9988,7 +10140,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                   ? "توقيع الموظف وإرسال استمارة الجرد الرقمية اليومية"
                                   : "Bilingual Electronic Staff Verification Stamps"}
                               </p>
-                              <p className="text-[10px] text-slate-400">
+                              <p className="text-[10px] text-slate-500">
                                 {language === "ar"
                                   ? `سيتم الختم برابط ومستوى الموظف النشط: ${currentUser.nameAr} | القسم: ${currentUser.department} (رقم الرمز: ${currentUser.staffId})`
                                   : `Stamped with actively logged-in: ${currentUser.nameEn} | Dept: ${currentUser.department} (Staff ID: ${currentUser.staffId})`}
@@ -10469,7 +10621,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                     {/* Sidebar templates selector with custom search box */}
                     <aside className="no-print lg:col-span-1 bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-4">
                       <div>
-                        <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1 font-sans">
+                        <h3 className="text-xs font-extrabold text-slate-500 uppercase tracking-widest flex items-center gap-1 font-sans">
                           <Layers className="h-4 w-4 text-pink-600" />
                           {language === "ar"
                             ? `نماذج الجرد (${allAvailableTemplates.length} شيت كامل)`
@@ -10485,7 +10637,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                       {/* SEARCH AND FILTER COMPONENTS (مربع بحث ذكي للبلاتفورم مع فلاتر أقسام) */}
                       <div className="space-y-3">
                         <div className="relative">
-                          <Search className="absolute right-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                          <Search className="absolute right-2.5 top-2.5 h-3.5 w-3.5 text-slate-500" />
                           <input
                             type="text"
                             placeholder={
@@ -10502,7 +10654,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                           {templateSearchQuery && (
                             <button
                               onClick={() => setTemplateSearchQuery("")}
-                              className="absolute left-2.5 top-2.5 font-bold text-slate-400 hover:text-slate-600"
+                              className="absolute left-2.5 top-2.5 font-bold text-slate-500 hover:text-slate-600"
                             >
                               <X className="h-3 w-3" />
                             </button>
@@ -10511,7 +10663,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                         {/* Horizontal Scrollable tabs of medical departments */}
                         <div>
-                          <span className="block text-[9px] text-slate-400 uppercase tracking-widest font-bold mb-1.5">
+                          <span className="block text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-1.5">
                             {language === "ar"
                               ? "الأقسام والوحدات الرئيسية:"
                               : "Department quick filters:"}
@@ -10581,7 +10733,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                         {/* Yearly Partition Filters */}
                         <div>
-                          <span className="block text-[9px] text-slate-400 uppercase tracking-widest font-bold mb-1.5">
+                          <span className="block text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-1.5">
                             {language === "ar"
                               ? "منها تقسيمات سنوية (السنة المعتمدة):"
                               : "Yearly partition (Approved year):"}
@@ -10614,7 +10766,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                       {/* Templates list scrollbox with dynamic match counters */}
                       <div className="flex flex-col gap-1.5 overflow-y-auto max-h-[380px] p-0.5 border-t border-slate-100 pt-3">
-                        <div className="flex justify-between items-center text-[10px] text-slate-400 mb-1">
+                        <div className="flex justify-between items-center text-[10px] text-slate-500 mb-1">
                           <span>
                             {language === "ar"
                               ? "السجلات المطابقة:"
@@ -10649,7 +10801,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                     ? tpl.titleAr
                                     : tpl.titleEn}
                                 </span>
-                                <span className="text-[9px] text-slate-400 mt-0.5 font-mono">
+                                <span className="text-[9px] text-slate-500 mt-0.5 font-mono">
                                   {tpl.code}
                                 </span>
                               </div>
@@ -10663,7 +10815,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                         })}
 
                         {filteredTemplates.length === 0 && (
-                          <div className="text-center py-8 text-xs text-slate-400">
+                          <div className="text-center py-8 text-xs text-slate-500">
                             {language === "ar"
                               ? "لا توجد نتائج مطابقة لبحثك."
                               : "No matching templates."}
@@ -10836,7 +10988,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                     className="p-2 flex items-center justify-between gap-3 hover:bg-slate-100/50"
                                   >
                                     <div className="flex-1 min-w-0 text-right">
-                                      <span className="text-[10px] font-extrabold text-slate-400 font-mono inline-block ml-2 w-5">
+                                      <span className="text-[10px] font-extrabold text-slate-500 font-mono inline-block ml-2 w-5">
                                         {rIdx + 1}
                                       </span>
                                       <span className="font-bold text-slate-800">
@@ -10863,7 +11015,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                         onClick={() =>
                                           handleStartEditRow(rIdx, row)
                                         }
-                                        className="p-1 hover:text-indigo-600 hover:bg-indigo-50 rounded transition text-slate-400 cursor-pointer"
+                                        className="p-1 hover:text-indigo-600 hover:bg-indigo-50 rounded transition text-slate-500 cursor-pointer"
                                         title={
                                           language === "ar"
                                             ? "تعديل محتوى الصف"
@@ -10874,7 +11026,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                       </button>
                                       <button
                                         onClick={() => handleDeleteRow(rIdx)}
-                                        className="p-1 hover:text-rose-600 hover:bg-rose-50 rounded transition text-slate-400 cursor-pointer"
+                                        className="p-1 hover:text-rose-600 hover:bg-rose-50 rounded transition text-slate-500 cursor-pointer"
                                         title={
                                           language === "ar"
                                             ? "حذف الصف كاملاً"
@@ -11069,7 +11221,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                     ? selectedTemplate.titleAr
                                     : selectedTemplate.titleEn}
                                 </h2>
-                                <span className="text-[9px] sm:text-xs font-mono text-slate-400 tracking-wider">
+                                <span className="text-[9px] sm:text-xs font-mono text-slate-500 tracking-wider">
                                   Form Reference: {selectedTemplate.code} |
                                   Version {selectedTemplate.version || "01"} |
                                   Rev: {selectedTemplate.issueDate}
@@ -11080,7 +11232,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             {/* Metadata Entry Row - nurse names, date, department */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs mb-4 avoid-break print:bg-transparent print:border-none print:p-0">
                               <div>
-                                <label className="block text-[9px] text-slate-400 font-bold mb-1 uppercase">
+                                <label className="block text-[9px] text-slate-500 font-bold mb-1 uppercase">
                                   {language === "ar"
                                     ? "القسم / مكان الجرد"
                                     : "Department / Unit Floor:"}
@@ -11099,13 +11251,13 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                               </div>
 
                               <div>
-                                <label className="block text-[9px] text-slate-400 font-bold mb-1 uppercase">
+                                <label className="block text-[9px] text-slate-500 font-bold mb-1 uppercase">
                                   {language === "ar"
                                     ? "تاريخ الفحص والمراقبة"
                                     : "Inspection Month/Date:"}
                                 </label>
                                 <div className="relative flex items-center">
-                                  <Calendar className="absolute right-2 text-slate-400 h-3.5 w-3.5 pointer-events-none" />
+                                  <Calendar className="absolute right-2 text-slate-500 h-3.5 w-3.5 pointer-events-none" />
                                   <input
                                     type="date"
                                     value={editingRecord.date}
@@ -11121,7 +11273,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                               </div>
 
                               <div>
-                                <label className="block text-[9px] text-slate-400 font-bold mb-1 uppercase">
+                                <label className="block text-[9px] text-slate-500 font-bold mb-1 uppercase">
                                   {language === "ar"
                                     ? "الوردية / الشفت المقترن بالجرد"
                                     : "Associated Shift Period:"}
@@ -11147,13 +11299,13 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                               </div>
 
                               <div>
-                                <label className="block text-[9px] text-slate-400 font-bold mb-1 uppercase">
+                                <label className="block text-[9px] text-slate-500 font-bold mb-1 uppercase">
                                   {language === "ar"
                                     ? "الممرض المسؤول حالياً"
                                     : "Investigated Nurse Name:"}
                                 </label>
                                 <div className="relative flex items-center">
-                                  <User className="absolute right-2 text-slate-400 h-3.5 w-3.5 pointer-events-none" />
+                                  <User className="absolute right-2 text-slate-500 h-3.5 w-3.5 pointer-events-none" />
                                   <input
                                     type="text"
                                     value={editingRecord.staffName}
@@ -11178,7 +11330,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                               </div>
 
                               <div>
-                                <label className="block text-[9px] text-slate-400 font-bold mb-1 uppercase font-mono">
+                                <label className="block text-[9px] text-slate-500 font-bold mb-1 uppercase font-mono">
                                   {language === "ar"
                                     ? "الرقم الوظيفي / الكود"
                                     : "Responsible Employee ID:"}
@@ -11527,7 +11679,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                   </div>
                                 </div>
 
-                                <div className="text-center pt-8 border-t text-[9px] text-slate-400 font-mono avoid-break">
+                                <div className="text-center pt-8 border-t text-[9px] text-slate-500 font-mono avoid-break">
                                   <span>
                                     Issue Date: 03.2025 | Document Reference:
                                     BHG-FR-MED-080 | Page 1 of 1
@@ -11920,7 +12072,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                 </div>
 
                                 {/* Document footer references */}
-                                <div className="text-center pt-6 border-t text-[9px] text-slate-400 font-mono avoid-break">
+                                <div className="text-center pt-6 border-t text-[9px] text-slate-500 font-mono avoid-break">
                                   <span>
                                     Revision: {selectedTemplate.code} | Issue
                                     Date: {selectedTemplate.issueDate} | $
@@ -12128,7 +12280,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                     <div className="max-h-52 overflow-y-auto space-y-2">
                       {notifications.length === 0 ? (
-                        <p className="text-[11px] text-slate-400 py-3 text-center">
+                        <p className="text-[11px] text-slate-500 py-3 text-center">
                           {language === "ar"
                             ? "لا توجد أي تنبيهات جديدة من وحدات المستشفى الطبية."
                             : "No new alerts at this moment."}
@@ -12144,7 +12296,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                 : "bg-rose-50/40 border-rose-100 text-slate-850 font-bold"
                             }`}
                           >
-                            <div className="text-[10px] font-mono text-slate-400 shrink-0 flex items-center gap-1.5">
+                            <div className="text-[10px] font-mono text-slate-500 shrink-0 flex items-center gap-1.5">
                               <span
                                 className={`w-1.5 h-1.5 rounded-full ${notif.read ? "bg-slate-300" : "bg-rose-500 animate-ping"}`}
                               />
@@ -12178,7 +12330,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                     {/* 1. Quality Compliance Score Gauge */}
                     <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden flex items-center justify-between">
                       <div>
-                        <span className="text-[10px] text-slate-400 font-bold block uppercase">
+                        <span className="text-[10px] text-slate-500 font-bold block uppercase">
                           معدل الامتثال العام للأقسام
                         </span>
                         <h4 className="text-2xl font-black text-slate-800 mt-1">
@@ -12225,14 +12377,14 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                     {/* 2. Total Audits Count */}
                     <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
                       <div className="text-right">
-                        <span className="text-[10px] text-slate-400 font-bold block uppercase">
+                        <span className="text-[10px] text-slate-500 font-bold block uppercase">
                           عدد الجرودات الموثقة بالأرشيف
                         </span>
                         <h4 className="text-2xl font-black text-slate-800 mt-1">
                           {records.length}{" "}
                           {language === "ar" ? "جرودات مأرشفة" : "logs"}
                         </h4>
-                        <span className="text-[9px] text-slate-400 block mt-1">
+                        <span className="text-[9px] text-slate-500 block mt-1">
                           بمتوسط تسجيل جودة دوري لكل نموذج نشط
                         </span>
                       </div>
@@ -12250,7 +12402,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                       }`}
                     >
                       <div className="text-right">
-                        <span className="text-[10px] text-slate-400 font-bold block uppercase">
+                        <span className="text-[10px] text-slate-500 font-bold block uppercase">
                           ثغرات أو عيوب معلقة رصدت حديثاً
                         </span>
                         <h4
@@ -12288,14 +12440,14 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                     {/* 4. Total staff concept switches */}
                     <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
                       <div className="text-right">
-                        <span className="text-[10px] text-slate-400 font-bold block uppercase">
+                        <span className="text-[10px] text-slate-500 font-bold block uppercase">
                           كادر العمل الطبي المنشط
                         </span>
                         <h4 className="text-2xl font-black text-slate-800 mt-1">
                           {systemUsers.length}{" "}
                           {language === "ar" ? "أعضاء كادر" : "accounts"}
                         </h4>
-                        <span className="text-[9px] text-slate-400 block mt-1">
+                        <span className="text-[9px] text-slate-500 block mt-1">
                           صلاحيات موزعة بين (الأدمن، التمريض والجودة)
                         </span>
                       </div>
@@ -12308,7 +12460,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                   {/* Creative AI-Driven Predictive Analytics Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 no-print text-right font-sans">
                     {/* AI Nurse Burnout & Clinical Error Predictor Card */}
-                    <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white p-5 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+                    <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white p-5 rounded-2xl border border-slate-200 shadow-xl space-y-4">
                       <div className="flex items-center justify-between border-b border-slate-850 pb-2.5">
                         <span className="bg-pink-900/40 text-pink-400 border border-pink-500/20 text-[9px] font-black tracking-widest px-2.5 py-0.5 rounded uppercase font-mono">
                           AI PREDICTOR ENGINE
@@ -12323,7 +12475,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                       </div>
 
                       <div className="space-y-4 text-xs">
-                        <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+                        <p className="text-[11px] text-slate-500 leading-relaxed font-sans">
                           يقوم نموذج الذكاء الاصطناعي بربط جداول نوبتجيات
                           التمريض (Roster Metrics) بقوائم الأخطاء والملاحظات
                           السريرية المسجلة للتنبؤ بمستويات التعب والإجهاد البشري
@@ -12331,19 +12483,19 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                         </p>
 
                         <div className="grid grid-cols-2 gap-3 pt-1">
-                          <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-850/60 text-center">
+                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 text-center">
                             <span className="text-xs font-mono font-black text-rose-450 text-rose-400 block">
                               78% RISK LEVEL
                             </span>
-                            <span className="text-[10px] text-slate-400 block mt-1">
+                            <span className="text-[10px] text-slate-500 block mt-1">
                               معامل خطر الإجهاد (ICU)
                             </span>
                           </div>
-                          <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-850/60 text-center">
-                            <span className="text-xs font-mono font-black text-emerald-400 block">
+                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 text-center">
+                            <span className="text-xs font-mono font-black text-emerald-600 block">
                               -38% REDUCTION
                             </span>
-                            <span className="text-[10px] text-slate-400 block mt-1">
+                            <span className="text-[10px] text-slate-500 block mt-1">
                               تحسين توزيع النوبتجيات
                             </span>
                           </div>
@@ -12364,7 +12516,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                     </div>
 
                     {/* AI Predictive Inventory Asset Exhaustion Module Card */}
-                    <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white p-5 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+                    <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white p-5 rounded-2xl border border-slate-200 shadow-xl space-y-4">
                       <div className="flex items-center justify-between border-b border-slate-850 pb-2.5">
                         <span className="bg-cyan-950/60 text-cyan-400 border border-cyan-500/20 text-[9px] font-black tracking-widest px-2.5 py-0.5 rounded uppercase font-mono">
                           ASSET VELOCITY CALC
@@ -12378,7 +12530,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                       </div>
 
                       <div className="space-y-4 text-xs font-sans">
-                        <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+                        <p className="text-[11px] text-slate-500 leading-relaxed font-sans">
                           من خلال استهلاك المستلزمات اليومي المدون في لوحة
                           الجرود السريعة، يحسب الذكاء الاصطناعي سرعة النفاد
                           (Consumption Velocity) ويتوقع تاريخ نفاد المخزون
@@ -12387,7 +12539,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                         <div className="space-y-2 text-right">
                           {/* Drug 1 */}
-                          <div className="flex items-center justify-between bg-slate-900/60 p-2.5 rounded-lg border border-slate-850 text-slate-300">
+                          <div className="flex items-center justify-between bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-slate-800">
                             <span className="font-bold text-rose-400 font-sans">
                               نفاد متوقع: 24 يونيو 2026
                             </span>
@@ -12396,7 +12548,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             </span>
                           </div>
                           {/* Drug 2 */}
-                          <div className="flex items-center justify-between bg-slate-900/60 p-2.5 rounded-lg border border-slate-850 text-slate-300">
+                          <div className="flex items-center justify-between bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-slate-800">
                             <span className="font-bold text-amber-400 font-sans">
                               نفاد متوقع: 19 يوليو 2026
                             </span>
@@ -12423,7 +12575,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                           <span>إمتثال الأقسام الطبية لمعايير الجودة</span>
                           <Award className="h-4 w-4 text-pink-600" />
                         </h4>
-                        <p className="text-[10px] text-slate-400 mt-0.5">
+                        <p className="text-[10px] text-slate-500 mt-0.5">
                           تقييم نسبي لمعدل التزام فرق التمريض بالجرد المنهجي
                           المعتمد ل${hospitalSettings.nameAr || "المؤسسة"}.
                         </p>
@@ -12526,7 +12678,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                           </h4>
                         </div>
 
-                        <p className="text-[10px] text-slate-400 mt-1 mb-3">
+                        <p className="text-[10px] text-slate-500 mt-1 mb-3">
                           عندما يقوم الكادر برصد خلل (علامة ✘) في أدوات الفحص،
                           تظهر الثغرة هنا فوراً لتمكين الجودة أو رئيسة التمريض
                           من كتابة الإجراء التصحيحي وإقفال البوابة الطبية
@@ -12595,7 +12747,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                     <p className="text-[9px] text-emerald-700 mt-0.5">
                                       {resolvedGaps["mock-crashcart"].notes}
                                     </p>
-                                    <div className="text-[8px] text-slate-400 mt-1">
+                                    <div className="text-[8px] text-slate-500 mt-1">
                                       بواسطة:{" "}
                                       {
                                         resolvedGaps["mock-crashcart"]
@@ -12650,7 +12802,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                         خلل في: {gap.itemName} / {gap.itemEn}
                                       </span>
                                     </div>
-                                    <p className="text-[10px] text-slate-400 mt-1 font-sans">
+                                    <p className="text-[10px] text-slate-500 mt-1 font-sans">
                                       {gap.templateTitle} ({gap.templateCode}) /
                                       اليوم {gap.dayNum} - بقسم:{" "}
                                       {gap.department} - بواسطة ({gap.staffName}
@@ -12665,7 +12817,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                         <p className="text-[9px] text-emerald-700 mt-0.5">
                                           {resInfo.notes}
                                         </p>
-                                        <div className="text-[8px] text-slate-400 mt-1">
+                                        <div className="text-[8px] text-slate-500 mt-1">
                                           بواسطة: {resInfo.resolvedBy} / بتاريخ:{" "}
                                           {resInfo.resolvedAt}
                                         </div>
@@ -12720,7 +12872,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                         </div>
                       </div>
 
-                      <div className="border-t pt-3 mt-4 text-[9px] text-slate-400 flex items-center justify-between">
+                      <div className="border-t pt-3 mt-4 text-[9px] text-slate-500 flex items-center justify-between">
                         <span>CQI COMMAND-ALERTS CLOUD WORKSPACE</span>
                         <span>تحديث مستمر ●</span>
                       </div>
@@ -12857,7 +13009,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                         استيراد سجلات المرضى والجرودات السابقة من أنظمة المستشفى
                         القديمة (Excel أو CSV) للمحافظة على الأرشيف التاريخي.
                       </p>
-                      <div className="bg-slate-50 border border-slate-200 rounded text-center p-6 text-slate-400">
+                      <div className="bg-slate-50 border border-slate-200 rounded text-center p-6 text-slate-500">
                         <DatabaseBackup className="w-8 h-8 mx-auto mb-2 text-slate-300" />
                         <span className="block text-xs font-bold">
                           اسحب ملفات البيانات هنا (.CSV, .XLSX)
@@ -12899,7 +13051,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                           </div>
                         </div>
                       </div>
-                      <div className="text-[9px] text-slate-400 text-center uppercase tracking-widest pt-2">
+                      <div className="text-[9px] text-slate-500 text-center uppercase tracking-widest pt-2">
                         System ensures non-repudiation of all generated
                         signatures
                       </div>
@@ -12911,10 +13063,10 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
               {itSubTab === "it_infra" && (
                 <div className="space-y-6 text-right select-none">
                   {/* Top Block: Network Security Operations Warning Controls */}
-                  <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-md space-y-4">
-                    <div className="flex flex-col sm:flex-row-reverse sm:items-center sm:justify-between border-b border-slate-800 pb-4 gap-4">
+                  <div className="bg-white text-slate-800 p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div className="flex flex-col sm:flex-row-reverse sm:items-center sm:justify-between border-b border-slate-100 pb-4 gap-4">
                       <div>
-                        <h3 className="font-extrabold text-slate-100 flex items-center gap-2 justify-end text-lg">
+                        <h3 className="font-extrabold text-slate-900 flex items-center gap-2 justify-end text-lg">
                           <span>
                             وحدة التحكم والتدخل السيبراني السريع - CISO CONSOLE
                           </span>
@@ -12922,19 +13074,19 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             ⚡
                           </span>
                         </h3>
-                        <p className="text-xs text-slate-400 mt-1">
+                        <p className="text-xs text-slate-500 mt-1">
                           المكتب المسؤول: د. محمد السيد (Operations Admin Staff
                           ID: 9999)
                         </p>
                       </div>
 
                       {/* Emergency global lockdown slider button */}
-                      <div className="flex items-center gap-3 bg-red-955 p-3 rounded-xl border border-red-900/60 self-start sm:self-auto bg-red-950">
+                      <div className="flex items-center gap-3 bg-red-50 p-3 rounded-xl border border-red-200 self-start sm:self-auto bg-red-50">
                         <div className="text-right">
                           <span className="block text-xs font-black text-rose-400">
                             🚨 قفل غلق النظام العام
                           </span>
-                          <span className="block text-[9px] text-slate-400 font-sans">
+                          <span className="block text-[9px] text-slate-500 font-sans">
                             غلق فوري للواجهات وسحب الجلسات لجميع الكوادر
                           </span>
                         </div>
@@ -12961,14 +13113,14 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2 text-right">
                       {/* Left: Port and Webhook Webhook Ports Matrix */}
-                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-4">
-                        <span className="block text-xs font-black text-pink-400 uppercase tracking-widest">
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+                        <span className="block text-xs font-black text-pink-600 uppercase tracking-widest">
                           ⚙️ تهيئة المنافذ والويب هوك - Webhook & Port Matrix
                         </span>
 
                         <div className="space-y-2 text-xs">
                           <div>
-                            <label className="block text-[10px] text-slate-400 mb-1">
+                            <label className="block text-[10px] text-slate-500 mb-1">
                               منفذ البث السحابي (Live Server Port ID):
                             </label>
                             <input
@@ -12979,11 +13131,11 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                   e.target.value.replace(/\D/g, ""),
                                 )
                               }
-                              className="w-full bg-slate-900 border border-slate-800 p-2 text-center text-xs font-mono font-bold rounded-lg text-amber-400 focus:outline-none focus:border-pink-500"
+                              className="w-full bg-slate-50 border border-slate-200 p-2 text-center text-xs font-mono font-bold rounded-lg text-amber-400 focus:outline-none focus:border-pink-500"
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] text-slate-400 mb-1">
+                            <label className="block text-[10px] text-slate-500 mb-1">
                               رابط إنذار الطوارئ (Emergency Broadcast Webhook
                               URL):
                             </label>
@@ -12993,7 +13145,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                               onChange={(e) =>
                                 setAlertWebhookUrl(e.target.value)
                               }
-                              className="w-full bg-slate-900 border border-slate-800 p-2 text-left text-xs font-mono rounded-lg text-pink-450 text-pink-400 focus:outline-none focus:border-pink-500"
+                              className="w-full bg-slate-50 border border-slate-200 p-2 text-left text-xs font-mono rounded-lg text-pink-450 text-pink-400 focus:outline-none focus:border-pink-500"
                             />
                           </div>
 
@@ -13012,7 +13164,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                 }, 1200);
                               }}
                               disabled={webhookTestStatus === "SENDING"}
-                              className="w-full py-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 text-[11px] font-bold rounded-lg transition text-slate-300 hover:text-white flex items-center justify-center gap-1.5 cursor-pointer"
+                              className="w-full py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[11px] font-bold rounded-lg transition text-slate-800 hover:text-indigo-700 flex items-center justify-center gap-1.5 cursor-pointer"
                             >
                               <span>
                                 {webhookTestStatus === "SENDING"
@@ -13022,7 +13174,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             </button>
                             {webhookTestStatus !== "IDLE" && (
                               <div
-                                className={`mt-2 p-2 rounded text-[10px] text-center font-mono font-bold ${webhookTestStatus.includes("SUCCESS") ? "bg-emerald-950 text-emerald-400 border border-emerald-900" : "bg-blue-950 text-blue-300 border border-blue-900"}`}
+                                className={`mt-2 p-2 rounded text-[10px] text-center font-mono font-bold ${webhookTestStatus.includes("SUCCESS") ? "bg-emerald-950 text-emerald-600 border border-emerald-900" : "bg-blue-950 text-blue-300 border border-blue-900"}`}
                               >
                                 STATE: [{webhookTestStatus}]
                               </div>
@@ -13032,7 +13184,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                       </div>
 
                       {/* Middle: Active sessions Ledger and Security Reaper */}
-                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-4">
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
                         <div className="flex items-center justify-between">
                           <button
                             onClick={() => {
@@ -13085,7 +13237,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                           >
                             🧹 تشغيل حاصد الخمول (Reaper)
                           </button>
-                          <span className="block text-xs font-black text-pink-400 uppercase tracking-widest">
+                          <span className="block text-xs font-black text-pink-600 uppercase tracking-widest">
                             👤 قائمة الجلسات النشطة وسقوف الخمول
                           </span>
                         </div>
@@ -13094,20 +13246,20 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                           {activeMockSessions.map((sess) => (
                             <div
                               key={sess.id}
-                              className="p-2 bg-slate-900/60 rounded-lg border border-slate-850 text-right text-[10px] space-y-1 relative font-sans"
+                              className="p-2 bg-slate-50 rounded-lg border border-slate-200 text-right text-[10px] space-y-1 relative font-sans"
                             >
                               <span
                                 className={`absolute top-2 left-2 w-2 h-2 rounded-full ${sess.status === "Active" ? "bg-emerald-400 animate-pulse" : sess.status === "Reaped" ? "bg-red-500 animate-ping" : "bg-amber-400 animate-pulse"}`}
                               />
                               <div className="flex items-center gap-1.5 justify-end text-[10px]">
-                                <span className="text-slate-400">
+                                <span className="text-slate-500">
                                   ({sess.id})
                                 </span>
                                 <span className="font-extrabold text-slate-200">
                                   كادر كود رقم: {sess.staffId}
                                 </span>
                               </div>
-                              <p className="text-slate-400 text-[9px]">
+                              <p className="text-slate-500 text-[9px]">
                                 القسم المفتوح: {sess.ward} &bull; Node IP:{" "}
                                 {sess.ip}
                               </p>
@@ -13130,8 +13282,8 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                       </div>
 
                       {/* Right: Active Diagnostics Sweep & Code Blue Transmitter */}
-                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-4">
-                        <span className="block text-xs font-black text-pink-400 uppercase tracking-widest">
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+                        <span className="block text-xs font-black text-pink-600 uppercase tracking-widest">
                           📡 فحص استجابة الشبكة والاتصالات
                         </span>
 
@@ -13156,7 +13308,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                               }, 1000);
                             }}
                             disabled={pingSweepStatus === "RUNNING"}
-                            className="w-full py-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 text-xs font-bold text-emerald-400 rounded-lg transition cursor-pointer flex items-center justify-center gap-1"
+                            className="w-full py-2 bg-slate-50 hover:bg-slate-850 border border-slate-200 text-xs font-bold text-emerald-600 rounded-lg transition cursor-pointer flex items-center justify-center gap-1"
                           >
                             <span>
                               {pingSweepStatus === "RUNNING"
@@ -13176,11 +13328,11 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                     className="flex items-center justify-between text-right"
                                   >
                                     <span
-                                      className={`font-bold font-mono ${ms < 10 ? "text-emerald-400" : ms < 20 ? "text-amber-400" : "text-red-400"}`}
+                                      className={`font-bold font-mono ${ms < 10 ? "text-emerald-600" : ms < 20 ? "text-amber-400" : "text-red-400"}`}
                                     >
                                       {ms}ms
                                     </span>
-                                    <div className="flex-1 mx-3 h-1.5 bg-slate-900 rounded-full overflow-hidden flex justify-end">
+                                    <div className="flex-1 mx-3 h-1.5 bg-slate-50 rounded-full overflow-hidden flex justify-end">
                                       <div
                                         className={`h-full rounded-full ${ms < 10 ? "bg-emerald-400" : ms < 20 ? "bg-amber-400" : "bg-red-400"}`}
                                         style={{
@@ -13228,11 +13380,11 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                   </div>
 
                   {/* Monospace Audit Terminal Beneath */}
-                  <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 text-white font-mono space-y-3 relative text-right">
+                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 text-slate-800 font-mono space-y-3 relative text-right">
                     <span className="absolute top-4 left-4 text-[9px] text-slate-500 uppercase tracking-widest pointer-events-none">
                       Immutable Audit Record
                     </span>
-                    <h3 className="text-sm font-bold text-emerald-400 border-b border-slate-900 pb-2 flex items-center gap-2 justify-end">
+                    <h3 className="text-sm font-bold text-emerald-600 border-b border-slate-900 pb-2 flex items-center gap-2 justify-end">
                       <span>
                         📟 سجل التدقيق والوقائع الطبية غير القالب للتعديل
                         (Immutable Live Trail Terminal)
@@ -13257,7 +13409,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             </span>
                             <div className="flex-1 text-slate-350 text-slate-300">
                               <span
-                                className={`px-1.5 py-0.2 rounded text-[9px] font-black mr-2 uppercase ${log.type === "success" ? "bg-emerald-950 text-emerald-400 border border-emerald-900" : log.type === "error" ? "bg-rose-950 text-rose-400 border border-rose-900" : log.type === "warning" ? "bg-amber-950 text-amber-500 border border-amber-900" : "bg-slate-900 text-slate-400 border border-slate-850"}`}
+                                className={`px-1.5 py-0.2 rounded text-[9px] font-black mr-2 uppercase ${log.type === "success" ? "bg-emerald-950 text-emerald-600 border border-emerald-900" : log.type === "error" ? "bg-rose-950 text-rose-400 border border-rose-900" : log.type === "warning" ? "bg-amber-950 text-amber-500 border border-amber-900" : "bg-slate-50 text-slate-500 border border-slate-200"}`}
                               >
                                 {log.type || "INFO"}
                               </span>
@@ -13346,7 +13498,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             <span className="text-pink-600">🧪</span>
                           </h3>
                         </div>
-                        <span className="text-xs font-bold text-slate-400 font-mono">
+                        <span className="text-xs font-bold text-slate-500 font-mono">
                           WORKSPACE ID: 9c8b4661-ab0e-4a0b-bf3e-6c70e3b95a58
                         </span>
                       </div>
@@ -13412,7 +13564,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             <button
                               onClick={handleEvaluateRule}
                               disabled={evaluating}
-                              className="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white border border-slate-700 text-xs font-extrabold rounded-lg transition cursor-pointer"
+                              className="w-full py-2 bg-slate-800 hover:bg-slate-50 text-white border border-slate-700 text-xs font-extrabold rounded-lg transition cursor-pointer"
                             >
                               {evaluating
                                 ? "جاري فحص السقوف الأمنية للمتغيرات..."
@@ -13427,27 +13579,27 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             📟 كونسول مخرجات الأمن والامتثال (Direct Live
                             Console):
                           </span>
-                          <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex-1 flex flex-col justify-between font-mono text-[11px] select-all min-h-[188px]">
-                            <div className="space-y-1 text-emerald-400">
+                          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex-1 flex flex-col justify-between font-mono text-[11px] select-all min-h-[188px]">
+                            <div className="space-y-1 text-emerald-600">
                               <p className="text-slate-500 text-[10px] select-none">
                                 # Security Simulator Core v3.1
                               </p>
-                              <p className="text-slate-400">
+                              <p className="text-slate-500">
                                 auth_uid: "test-dev-user-009"
                               </p>
-                              <p className="text-slate-400">
+                              <p className="text-slate-500">
                                 token_role: "{testRole}"
                               </p>
-                              <p className="text-slate-400">
+                              <p className="text-slate-500">
                                 resource_path:
                                 "/databases/default/documents/medical_records/*"
                               </p>
-                              <p className="text-slate-300">
+                              <p className="text-slate-700">
                                 Evaluating execution security criteria
                                 matches...
                               </p>
                               <p
-                                className={`font-bold mt-2 pt-2 border-t border-slate-900 select-all ${ruleOutput.includes("SUCCESS") ? "text-emerald-400" : "text-rose-400"}`}
+                                className={`font-bold mt-2 pt-2 border-t border-slate-900 select-all ${ruleOutput.includes("SUCCESS") ? "text-emerald-600" : "text-rose-400"}`}
                               >
                                 {ruleOutput}
                               </p>
@@ -13479,7 +13631,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                         <span className="text-xs font-bold text-rose-400">
                           🚨 رمز فك التشفير السيادي (Master Emergency PIN)
                         </span>
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-[10px] text-slate-500">
                           يستخدم حصراً في حالة الطوارئ لفك بيانات التشفير
                           المعقدة أو تجاوز حظر النظام المفتوح.
                         </p>
@@ -13488,7 +13640,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                           placeholder="••••••••••••"
                           readOnly
                           value="XXXX-XXXX-MASTER"
-                          className="w-full bg-slate-900 text-center font-mono py-2 rounded border border-rose-800 text-rose-500 text-sm tracking-widest cursor-not-allowed"
+                          className="w-full bg-slate-50 text-center font-mono py-2 rounded border border-rose-800 text-rose-500 text-sm tracking-widest cursor-not-allowed"
                         />
                         <button className="w-full py-1.5 text-xs bg-rose-800 hover:bg-rose-700 rounded text-rose-100 font-bold transition">
                           دوران الرمز وإصدار توكن جديد
@@ -13496,14 +13648,14 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                       </div>
 
                       <div className="space-y-3 bg-black/30 p-4 rounded-xl border border-rose-900">
-                        <span className="text-xs font-bold text-emerald-400">
+                        <span className="text-xs font-bold text-emerald-600">
                           💾 سياسات النسخ الاحتياطي (Automated Backup Policies)
                         </span>
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-[10px] text-slate-500">
                           ميزة جدولة النسخ (عالي التردد للطوارئ والعمليات، ويومي
                           للملفات العادية).
                         </p>
-                        <div className="flex justify-between items-center bg-slate-900 p-2 rounded text-[10px] border border-slate-800">
+                        <div className="flex justify-between items-center bg-slate-50 p-2 rounded text-[10px] border border-slate-200">
                           <span className="text-slate-300 font-mono">
                             CRON: 0 * * * *
                           </span>
@@ -13511,7 +13663,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             كل ساعة لحركات الميدان
                           </span>
                         </div>
-                        <div className="flex justify-between items-center bg-slate-900 p-2 rounded text-[10px] border border-slate-800">
+                        <div className="flex justify-between items-center bg-slate-50 p-2 rounded text-[10px] border border-slate-200">
                           <span className="text-slate-300 font-mono">
                             CRON: 0 0 * * *
                           </span>
@@ -13771,16 +13923,6 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
             <HeadNurseDashboard
               language={language}
               onNavigate={handleGeneralNavigation}
-            />
-          )}
-
-          {activeTab === "his" && (
-            <HospitalInformationSystem
-              language={language}
-              currentUser={currentUser}
-              systemUsers={systemUsers}
-              hospitalSettings={hospitalSettings}
-              onLogout={handleLogout}
             />
           )}
 
@@ -14690,14 +14832,14 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                           08:00 AM - 08:00 PM
                         </span>
                       </div>
-                      <div className="bg-slate-950 border border-slate-900 p-2.5 rounded-xl text-center shadow-inner">
-                        <span className="font-black text-emerald-400 text-base block font-mono">
+                      <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-center shadow-inner">
+                        <span className="font-black text-emerald-600 text-base block font-mono">
                           N
                         </span>
                         <span className="font-bold text-slate-200 block mt-0.5">
                           {language === "ar" ? "نايت" : "Night Shift"}
                         </span>
-                        <span className="text-[9px] text-slate-400 font-mono block mt-0.5">
+                        <span className="text-[9px] text-slate-500 font-mono block mt-0.5">
                           08:00 PM - 08:00 AM
                         </span>
                       </div>
@@ -14762,7 +14904,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                       >
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                            <span className="text-[10px] uppercase font-bold text-slate-500 block">
                               {language === "ar"
                                 ? "الاعتماد الأول التمريضي"
                                 : "First Sign-off Stage"}
@@ -14791,12 +14933,12 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                 <span className="text-[9px] text-emerald-600 font-mono font-bold">
                                   بواسطة: {customCnoName}
                                 </span>
-                                <span className="text-[9px] text-slate-400 font-mono">
+                                <span className="text-[9px] text-slate-500 font-mono">
                                   Date: {cnoApprovalDate}
                                 </span>
                               </div>
                             ) : (
-                              <div className="pt-2 text-[10.5px] text-slate-400 font-bold">
+                              <div className="pt-2 text-[10.5px] text-slate-500 font-bold">
                                 {language === "ar"
                                   ? `⌛ بانتظار توقيع رئيسة التمريض (${customCnoName})`
                                   : `Pending Signature of ${customCnoName}`}
@@ -14885,7 +15027,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                 </svg>
                               </div>
                             ) : (
-                              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-400">
+                              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-500">
                                 <KeyRound className="w-5 h-5" />
                               </div>
                             )}
@@ -14930,7 +15072,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                       >
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                            <span className="text-[10px] uppercase font-bold text-slate-500 block">
                               {language === "ar"
                                 ? "الاعتماد النهائي الإداري"
                                 : "Final Executive Stage"}
@@ -14959,12 +15101,12 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                 <span className="text-[9px] text-emerald-600 font-mono font-bold">
                                   بواسطة: {customDirectorName}
                                 </span>
-                                <span className="text-[9px] text-slate-400 font-mono">
+                                <span className="text-[9px] text-slate-500 font-mono">
                                   Date: {directorApprovalDate}
                                 </span>
                               </div>
                             ) : (
-                              <div className="pt-2 text-[10.5px] text-slate-400 font-bold">
+                              <div className="pt-2 text-[10.5px] text-slate-500 font-bold">
                                 {language === "ar"
                                   ? `⌛ بانتظار توقيع المدير الطبي ورئيس العمليات (${customDirectorName})`
                                   : `Pending Seal of ${customDirectorName}`}
@@ -15053,7 +15195,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                 </svg>
                               </div>
                             ) : (
-                              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-400">
+                              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-500">
                                 <KeyRound className="w-5 h-5" />
                               </div>
                             )}
@@ -15327,7 +15469,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                       {isAddingRosterRow && (
                         <div className="bg-slate-50 border border-slate-200 rounded-xl p-4.5 space-y-4 animate-fade">
                           <div className="flex items-center justify-between border-b pb-2">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                               {language === "ar"
                                 ? "بطاقة تسجيل موظف روستر فوري"
                                 : "Instant Staff Registration Card"}
@@ -15387,7 +15529,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                 placeholder="e.g. NUR-150"
                                 className="w-full bg-white border border-slate-300 rounded-lg py-1.5 px-3 focus:ring-1 focus:ring-pink-500 outline-none text-left font-mono font-bold text-pink-700 uppercase animate-pulse"
                               />
-                              <span className="text-[9px] text-slate-400 mt-1 block">
+                              <span className="text-[9px] text-slate-500 mt-1 block">
                                 {language === "ar"
                                   ? "سيتم تلقائياً إضافة البادئة BHG- إن لم يكتب"
                                   : "Auto-prefixes BHG- if omitted"}
@@ -15665,7 +15807,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => window.print()}
-                          className="px-5 py-2 bg-slate-900 hover:bg-black text-white font-black text-xs rounded-xl transition flex items-center gap-2 cursor-pointer shadow-lg border border-slate-700"
+                          className="px-5 py-2 bg-slate-50 hover:bg-black text-white font-black text-xs rounded-xl transition flex items-center gap-2 cursor-pointer shadow-lg border border-slate-700"
                         >
                           <Printer className="h-4 w-4 shrink-0" />
                           <span>
@@ -15704,7 +15846,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                     isWeekend ? "bg-red-50 text-red-750" : ""
                                   }`}
                                 >
-                                  <div className="text-[9px] text-slate-400 font-bold tracking-tight">
+                                  <div className="text-[9px] text-slate-500 font-bold tracking-tight">
                                     {weekday}
                                   </div>
                                   <div className="text-sm font-black text-rose-950 mt-0.5">
@@ -15820,7 +15962,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                 <tr>
                                   <td
                                     colSpan={32}
-                                    className="p-10 text-center text-slate-400 font-bold"
+                                    className="p-10 text-center text-slate-500 font-bold"
                                   >
                                     {language === "ar"
                                       ? "⚠️ لم يتم تدوين طاقم مخصص لهذا القسم بعد."
@@ -15850,7 +15992,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                     (row.employeeId || row.employeeCode) ? (
                                       <div className="space-y-1.5 p-1 no-print">
                                         <div>
-                                          <label className="text-[8px] font-black text-slate-400 block mb-0.5 text-right uppercase">
+                                          <label className="text-[8px] font-black text-slate-500 block mb-0.5 text-right uppercase">
                                             الاسم (عربي):
                                           </label>
                                           <input
@@ -15866,7 +16008,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                           />
                                         </div>
                                         <div>
-                                          <label className="text-[8px] font-black text-slate-400 block mb-0.5 text-right uppercase">
+                                          <label className="text-[8px] font-black text-slate-500 block mb-0.5 text-right uppercase">
                                             Name (English):
                                           </label>
                                           <input
@@ -15882,7 +16024,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                           />
                                         </div>
                                         <div>
-                                          <label className="text-[8px] font-black text-slate-400 block mb-0.5 text-right uppercase">
+                                          <label className="text-[8px] font-black text-slate-500 block mb-0.5 text-right uppercase">
                                             Code:
                                           </label>
                                           <input
@@ -16022,7 +16164,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                                   row.employeeCode || "",
                                                 );
                                               }}
-                                              className="text-slate-400 hover:text-blue-650 hover:text-blue-600 p-0.5 rounded transition cursor-pointer"
+                                              className="text-slate-500 hover:text-blue-650 hover:text-blue-600 p-0.5 rounded transition cursor-pointer"
                                               title={
                                                 language === "ar"
                                                   ? "تعديل اسم وبيانات الموظف"
@@ -16039,7 +16181,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                               onClick={() =>
                                                 handleRemoveRosterEmpInline(row)
                                               }
-                                              className="text-slate-400 hover:text-rose-600 p-0.5 rounded transition cursor-pointer"
+                                              className="text-slate-500 hover:text-rose-600 p-0.5 rounded transition cursor-pointer"
                                               title={
                                                 language === "ar"
                                                   ? "حذف وتعطيل الموظف من الروستر والبرنامج"
@@ -16060,7 +16202,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                                     // Stylings for shift badges - customized to be completely distinct with no similarity
                                     let badgeClass =
-                                      "bg-slate-50 text-slate-400 border border-slate-100";
+                                      "bg-slate-50 text-slate-500 border border-slate-100";
                                     if (value === "M")
                                       badgeClass =
                                         "bg-cyan-500 text-slate-950 font-mono font-black border border-cyan-600 shadow-sm";
@@ -16072,7 +16214,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                         "bg-orange-500 text-white font-mono font-black border border-orange-600 shadow-sm";
                                     if (value === "N")
                                       badgeClass =
-                                        "bg-slate-950 text-emerald-400 font-mono font-black border-2 border-slate-900 shadow-sm";
+                                        "bg-slate-950 text-emerald-600 font-mono font-black border-2 border-slate-900 shadow-sm";
                                     if (value === "DN")
                                       badgeClass =
                                         "bg-fuchsia-600 text-white font-mono font-black border border-fuchsia-700 shadow-sm animate-pulse";
@@ -16399,7 +16541,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                         <div className="text-[10px] text-pink-600 font-bold">
                                           {k}
                                         </div>
-                                        <div className="text-[7.5px] text-slate-400 font-semibold">
+                                        <div className="text-[7.5px] text-slate-500 font-semibold">
                                           {language === "ar"
                                             ? ROSTER_DAYS_WD[i] === "MON"
                                               ? "إثن"
@@ -17106,7 +17248,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                               {/* Active Chain Map */}
                               <div className="grid grid-cols-4 gap-1 text-[8.5px] text-center pt-1 font-bold">
-                                <div className="bg-white/10 p-1.5 rounded-lg border border-white/5 space-y-0.5">
+                                <div className="bg-white/10 p-1.5 rounded-lg border border-slate-100 space-y-0.5">
                                   <span className="block text-slate-300">
                                     1.{" "}
                                     {language === "ar"
@@ -17114,7 +17256,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                       : "Supervisor"}
                                   </span>
                                   <span
-                                    className={`${pendingCount > 0 ? "text-amber-400 animate-pulse" : "text-emerald-400"}`}
+                                    className={`${pendingCount > 0 ? "text-amber-400 animate-pulse" : "text-emerald-600"}`}
                                   >
                                     ●{" "}
                                     {pendingCount > 0
@@ -17126,28 +17268,28 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                         : "Synced"}
                                   </span>
                                 </div>
-                                <div className="bg-white/10 p-1.5 rounded-lg border border-white/5 space-y-0.5">
+                                <div className="bg-white/10 p-1.5 rounded-lg border border-slate-100 space-y-0.5">
                                   <span className="block text-slate-300">
                                     2.{" "}
                                     {language === "ar" ? "رئيسة التمريض" : "HN"}
                                   </span>
-                                  <span className="text-emerald-400">
+                                  <span className="text-emerald-600">
                                     ● {language === "ar" ? "نشط" : "Online"}
                                   </span>
                                 </div>
-                                <div className="bg-white/10 p-1.5 rounded-lg border border-white/5 space-y-0.5">
+                                <div className="bg-white/10 p-1.5 rounded-lg border border-slate-100 space-y-0.5">
                                   <span className="block text-slate-300">
                                     3.{" "}
                                     {language === "ar"
                                       ? "مدير الجودة"
                                       : "Quality Manager"}
                                   </span>
-                                  <span className="text-emerald-400">
+                                  <span className="text-emerald-600">
                                     ●{" "}
                                     {language === "ar" ? "مراقب" : "Monitoring"}
                                   </span>
                                 </div>
-                                <div className="bg-white/10 p-1.5 rounded-lg border border-white/5 space-y-0.5">
+                                <div className="bg-white/10 p-1.5 rounded-lg border border-slate-100 space-y-0.5">
                                   <span className="block text-slate-300">
                                     4.{" "}
                                     {language === "ar"
@@ -17155,7 +17297,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                       : "CNO/Director"}
                                   </span>
                                   <span
-                                    className={`${cnoApproved ? "text-emerald-400" : "text-amber-400"}`}
+                                    className={`${cnoApproved ? "text-emerald-600" : "text-amber-400"}`}
                                   >
                                     ●{" "}
                                     {cnoApproved
@@ -17185,7 +17327,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                           if (filteredWishes.length === 0) {
                             return (
-                              <div className="p-8 text-center text-slate-400 font-bold text-xs bg-slate-50 rounded-xl border border-dashed">
+                              <div className="p-8 text-center text-slate-500 font-bold text-xs bg-slate-50 rounded-xl border border-dashed">
                                 {language === "ar"
                                   ? "📂 لا توجد طلبات أو رغبات مسجلة للاستعراض حالياً."
                                   : "No submitted requests."}
@@ -17231,7 +17373,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                   </div>
 
                                   <div className="flex items-center gap-2">
-                                    <span className="bg-slate-900 text-slate-100 px-2.5 py-1 rounded font-mono text-[10px] font-black">
+                                    <span className="bg-slate-50 text-slate-100 px-2.5 py-1 rounded font-mono text-[10px] font-black">
                                       Day: {wish.dayKey} ➔ {wish.requestedShift}
                                     </span>
 
@@ -17548,7 +17690,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                   {/* Aggregates Dashboard */}
                   <div className="flex gap-4 shrink-0 bg-slate-800/60 p-4 rounded-xl border border-slate-700 justify-end md:justify-start">
                     <div className="text-center px-2">
-                      <span className="block text-[10px] text-slate-400 uppercase font-bold">
+                      <span className="block text-[10px] text-slate-500 uppercase font-bold">
                         {language === "ar"
                           ? "إجمالي النماذج النشطة"
                           : "Active Sheets"}
@@ -17559,7 +17701,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                     </div>
                     <div className="w-px bg-slate-700 self-stretch" />
                     <div className="text-center px-2">
-                      <span className="block text-[10px] text-slate-400 uppercase font-bold">
+                      <span className="block text-[10px] text-slate-500 uppercase font-bold">
                         {language === "ar" ? "الأقسام والوحدات" : "Departments"}
                       </span>
                       <span className="text-2xl font-black text-amber-400">
@@ -17568,12 +17710,12 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                     </div>
                     <div className="w-px bg-slate-700 self-stretch" />
                     <div className="text-center px-2">
-                      <span className="block text-[10px] text-slate-400 uppercase font-bold">
+                      <span className="block text-[10px] text-slate-500 uppercase font-bold">
                         {language === "ar"
                           ? "الشيتات المجرودة"
                           : "Logged Records"}
                       </span>
-                      <span className="text-2xl font-black text-emerald-400">
+                      <span className="text-2xl font-black text-emerald-600">
                         {records.length}
                       </span>
                     </div>
@@ -17587,7 +17729,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                 <div className="xl:col-span-1 space-y-6 text-right">
                   <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
                     <div className="border-b border-slate-100 pb-2">
-                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center justify-end gap-1.5 font-sans">
+                      <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center justify-end gap-1.5 font-sans">
                         <span>
                           {language === "ar"
                             ? "التوجيه والدليفري للنماذج"
@@ -17721,7 +17863,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             );
                           }
                         }}
-                        className="w-full bg-pink-600 hover:bg-pink-700 hover:text-pink-100 text-white font-bold py-2 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm uppercase cursor-pointer"
+                        className="w-full bg-pink-600 hover:bg-pink-700 hover:text-slate-900 text-white font-bold py-2 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm uppercase cursor-pointer"
                       >
                         <ArrowLeftRight className="h-4 w-4" />
                         <span>
@@ -17882,7 +18024,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                 <div className="xl:col-span-2 space-y-6 text-right">
                   <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm text-right">
                     <div className="border-b border-slate-100 pb-3 mb-4">
-                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest text-right font-sans">
+                      <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest text-right font-sans">
                         {language === "ar"
                           ? "خرائط توزيع الاستمارات على الأقسام والوحدات الـ 16"
                           : "Allotment Map of 16 Clinical Departments"}
@@ -17932,7 +18074,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                 {dept}
                               </h4>
 
-                              <p className="text-[10px] text-slate-400 leading-none mt-1 text-right font-mono font-medium block">
+                              <p className="text-[10px] text-slate-500 leading-none mt-1 text-right font-mono font-medium block">
                                 {language === "ar"
                                   ? `قسم ${hospitalSettings.nameAr || "المؤسسة"} المتكامل الفرعي`
                                   : `Integrated Wing`}
@@ -17941,7 +18083,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                               {/* Mini statistics */}
                               <div className="mt-3 grid grid-cols-2 gap-1 border-t border-slate-200/60 pt-2.5 flex-row-reverse">
                                 <div className="text-right">
-                                  <span className="block text-[8px] text-slate-400 leading-none font-bold">
+                                  <span className="block text-[8px] text-slate-500 leading-none font-bold">
                                     {language === "ar"
                                       ? "السجلات المرفوعة"
                                       : "Logged Files"}
@@ -17952,7 +18094,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                   </span>
                                 </div>
                                 <div className="text-right">
-                                  <span className="block text-[8px] text-slate-400 leading-none font-bold">
+                                  <span className="block text-[8px] text-slate-500 leading-none font-bold">
                                     {language === "ar"
                                       ? "معدل الرصد"
                                       : "Reporting Cycle"}
@@ -18012,14 +18154,14 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
           {activeTab === "manage_templates" && (
             <div className="space-y-6 animate-fade font-sans text-right max-w-5xl mx-auto pb-20">
-              <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 border-b-4 border-pink-600 mb-6 mt-4 mx-4">
+              <div className="bg-white text-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 mt-4 mx-4">
                 <div className="flex items-center gap-2 justify-end text-right">
                   <div className="bg-pink-500 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
                     {language === "ar"
                       ? "إعداد النظام المؤسسي"
                       : "HOSPITAL CONFIG"}
                   </div>
-                  <h3 className="font-extrabold text-base text-pink-100 flex items-center gap-1.5 font-sans">
+                  <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-1.5 font-sans">
                     <span>
                       {language === "ar"
                         ? "النماذج وقائمة المستشفى"
@@ -18125,7 +18267,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                     ? "النموذج معطل ومخفي حالياً عن الكادر الطبي"
                                     : "النموذج نشط ويظهر للمستخدمين بالقائمة"}
                                 </p>
-                                <span className="text-[10px] text-slate-400">
+                                <span className="text-[10px] text-slate-500">
                                   تتحكم هذه الميزة في إخفاء الشيت بالكامل لتبسيط
                                   عمليات الجرد اليومية وتقليص الخيارات غير
                                   الضرورية
@@ -18302,7 +18444,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             {/* Quick single item adder */}
                             <div className="bg-white p-3 rounded-lg border border-slate-200 grid grid-cols-1 md:grid-cols-12 gap-2 text-right items-end font-sans">
                               <div className="md:col-span-3">
-                                <label className="block text-[9px] font-bold text-slate-400 mb-1">
+                                <label className="block text-[9px] font-bold text-slate-500 mb-1">
                                   البند / الصنف بالعربية
                                 </label>
                                 <input
@@ -18320,7 +18462,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                               </div>
 
                               <div className="md:col-span-3">
-                                <label className="block text-[9px] font-bold text-slate-400 mb-1">
+                                <label className="block text-[9px] font-bold text-slate-500 mb-1">
                                   البند بالإنجليزية
                                 </label>
                                 <input
@@ -18338,7 +18480,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                               </div>
 
                               <div className="md:col-span-2">
-                                <label className="block text-[9px] font-bold text-slate-400 mb-1">
+                                <label className="block text-[9px] font-bold text-slate-500 mb-1">
                                   كود الصنف
                                 </label>
                                 <input
@@ -18356,7 +18498,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                               </div>
 
                               <div className="md:col-span-1 border-r pr-2 md:border-r-0 md:pr-0">
-                                <label className="block text-[9px] font-bold text-slate-400 mb-1">
+                                <label className="block text-[9px] font-bold text-slate-500 mb-1">
                                   الوحدة
                                 </label>
                                 <input
@@ -18425,7 +18567,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                         {item.sn}
                                       </span>
                                       {item.code && (
-                                        <span className="font-mono text-slate-400 font-bold ml-1 text-[9px]">
+                                        <span className="font-mono text-slate-500 font-bold ml-1 text-[9px]">
                                           {item.code}
                                         </span>
                                       )}
@@ -18433,7 +18575,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                         {item.itemAr}
                                       </span>
                                       {item.itemEn && (
-                                        <span className="text-slate-400 font-mono text-[10px] mr-1">
+                                        <span className="text-slate-500 font-mono text-[10px] mr-1">
                                           / {item.itemEn}
                                         </span>
                                       )}
@@ -18655,7 +18797,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                         <div className="bg-white p-3 rounded-lg border border-slate-200 grid grid-cols-1 md:grid-cols-12 gap-2 text-right items-end">
                           <div className="md:col-span-3">
-                            <label className="block text-[9px] font-bold text-slate-400 mb-1">
+                            <label className="block text-[9px] font-bold text-slate-500 mb-1">
                               البند بالعربية *
                             </label>
                             <input
@@ -18673,7 +18815,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                           </div>
 
                           <div className="md:col-span-3">
-                            <label className="block text-[9px] font-bold text-slate-400 mb-1">
+                            <label className="block text-[9px] font-bold text-slate-500 mb-1">
                               البند بالإنجليزية
                             </label>
                             <input
@@ -18691,7 +18833,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                           </div>
 
                           <div className="md:col-span-2">
-                            <label className="block text-[9px] font-bold text-slate-400 mb-1">
+                            <label className="block text-[9px] font-bold text-slate-500 mb-1">
                               كود الصنف (اختياري)
                             </label>
                             <input
@@ -18709,7 +18851,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                           </div>
 
                           <div className="md:col-span-1.5 border-r pr-2 md:border-r-0 md:pr-0">
-                            <label className="block text-[9px] font-bold text-slate-400 mb-1">
+                            <label className="block text-[9px] font-bold text-slate-500 mb-1">
                               الوحدة
                             </label>
                             <input
@@ -18727,7 +18869,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                           </div>
 
                           <div className="md:col-span-1.5">
-                            <label className="block text-[9px] font-bold text-slate-400 mb-1">
+                            <label className="block text-[9px] font-bold text-slate-500 mb-1">
                               الكمية المطلوبة
                             </label>
                             <input
@@ -18747,7 +18889,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                           <div className="md:col-span-1">
                             <button
                               onClick={handleAddNewTemplateItem}
-                              className="w-full py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                              className="w-full py-1.5 bg-slate-800 hover:bg-slate-50 text-white rounded text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
                             >
                               <Plus className="h-3 w-3" />
                               <span>درج</span>
@@ -18758,7 +18900,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                         {/* Created builder items preview */}
                         {newTemplateItems.length > 0 && (
                           <div className="mt-3 bg-white p-2.5 rounded-lg border border-slate-200 space-y-2">
-                            <span className="text-[10px] font-bold text-slate-400 block border-b pb-1">
+                            <span className="text-[10px] font-bold text-slate-500 block border-b pb-1">
                               البنود المضافة حالياً للشيت الجديد (
                               {newTemplateItems.length} بند جرد مخصص):
                             </span>
@@ -18771,7 +18913,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                   <span className="font-bold">
                                     {item.itemAr}
                                   </span>
-                                  <span className="text-slate-400 text-[8px]">
+                                  <span className="text-slate-500 text-[8px]">
                                     ({item.qty} {item.unit})
                                   </span>
                                   <button
@@ -18779,7 +18921,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                     onClick={() =>
                                       handleRemoveNewTemplateItem(index)
                                     }
-                                    className="text-slate-400 hover:text-red-650 transition font-bold"
+                                    className="text-slate-500 hover:text-red-650 transition font-bold"
                                   >
                                     <X className="h-3 w-3" />
                                   </button>
@@ -18810,7 +18952,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             className="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 font-mono font-bold leading-normal outline-none focus:ring-1 focus:ring-pink-500 placeholder-slate-400 focus:bg-white"
                             placeholder="سرنجة معقمة 5 سم مخصصة|Sterile Syringe 5cc|PCS|12&#10;شريط اختبار قياس رطوبة الهواء|Air Humidity Testing Strip|STRIP|6&#10;مسحة كحول ناصعة معقمة مخصصة|Sterile Alcohol Swab|PACK|24"
                           />
-                          <p className="text-[10px] text-slate-400 leading-normal mt-1">
+                          <p className="text-[10px] text-slate-500 leading-normal mt-1">
                             يقوم النظام بتسجيل البنود وتغذية الـ 31 يوماً آلياً
                             لكل سطر مندمج. افصل البنود بسطر جديد (Enter)،
                             والخصائص برمز الأنبوب (|).
@@ -18902,7 +19044,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                   placeholder="البحث في الشيتات..."
                                   className="py-1 px-3 pr-7 bg-slate-50 border border-slate-200 rounded-lg text-[10px] outline-none focus:bg-white"
                                 />
-                                <Search className="absolute right-2 top-2 h-3 w-3 text-slate-400" />
+                                <Search className="absolute right-2 top-2 h-3 w-3 text-slate-500" />
                               </div>
 
                               {/* Department filter select */}
@@ -18966,7 +19108,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                           {/* Custom Templates Cards Container */}
                           {filteredTemplates.length === 0 ? (
-                            <div className="p-8 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 text-center text-slate-400">
+                            <div className="p-8 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 text-center text-slate-500">
                               لا توجد نتائج مطابقة للتصنيفات النشطة حالياً. يرجى
                               تعديل البحث أو إنشاء شيت جديد.
                             </div>
@@ -19234,7 +19376,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                       {/* Stats */}
                       <div className="flex gap-4 shrink-0 bg-slate-800/60 p-4 rounded-xl border border-slate-700 justify-end">
                         <div className="text-center px-2">
-                          <span className="block text-[10px] text-slate-400 font-bold">
+                          <span className="block text-[10px] text-slate-500 font-bold">
                             {language === "ar"
                               ? "السجلات الكلية بالأرشيف"
                               : "Total Logged"}
@@ -19245,12 +19387,12 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                         </div>
                         <div className="w-px bg-slate-700 self-stretch" />
                         <div className="text-center px-2">
-                          <span className="block text-[10px] text-slate-400 font-bold">
+                          <span className="block text-[10px] text-slate-500 font-bold">
                             {language === "ar"
                               ? "تطابق البحث الحالي"
                               : "Filtered Matches"}
                           </span>
-                          <span className="text-2xl font-black text-emerald-400">
+                          <span className="text-2xl font-black text-emerald-600">
                             {finalHistoryRecords.length}
                           </span>
                         </div>
@@ -19268,7 +19410,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             ? "ابحث بنص، كود الشيت، الموظف، المريض..."
                             : "Search text, Staff, Patient..."}
                         </span>
-                        <Search className="h-3.5 w-3.5 text-slate-400" />
+                        <Search className="h-3.5 w-3.5 text-slate-500" />
                       </label>
                       <div className="relative">
                         <input
@@ -19282,7 +19424,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                           }
                           className="w-full bg-slate-50 hover:bg-slate-100/50 border border-slate-200 rounded-lg pr-9 pl-3 py-2 text-right transition font-medium focus:bg-white focus:ring-2 focus:ring-pink-500/10 focus:border-pink-500 text-xs focus:outline-none"
                         />
-                        <Search className="absolute right-3 top-2.5 h-4 w-4 text-slate-400" />
+                        <Search className="absolute right-3 top-2.5 h-4 w-4 text-slate-500" />
                       </div>
                     </div>
 
@@ -19379,7 +19521,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
                           <div className="overflow-x-auto text-right">
                             <table className="w-full text-xs text-right text-slate-650 whitespace-nowrap min-w-full">
-                              <thead className="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase font-black tracking-wider text-[10px]">
+                              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-black tracking-wider text-[10px]">
                                 <tr>
                                   <th scope="col" className="px-4 py-3">
                                     {language === "ar" ? "كود الشيت" : "Code"}
@@ -19467,7 +19609,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                           <span>
                                             {r.staffName || "غير معرف"}
                                           </span>
-                                          <span className="text-[9px] text-slate-400 font-mono">
+                                          <span className="text-[9px] text-slate-500 font-mono">
                                             ID: {r.staffId || "N/A"}
                                           </span>
                                         </div>
@@ -19569,7 +19711,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                     onClick={() =>
                                       setSelectedHistoryRecord(null)
                                     }
-                                    className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+                                    className="text-slate-500 hover:text-slate-600 text-sm font-bold"
                                   >
                                     ✕ {language === "ar" ? "إغلاق" : "hide"}
                                   </button>
@@ -19578,7 +19720,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                 <div className="space-y-3 text-xs leading-relaxed">
                                   {/* Metadata list */}
                                   <div>
-                                    <span className="block text-[10px] text-slate-400 font-bold">
+                                    <span className="block text-[10px] text-slate-500 font-bold">
                                       {language === "ar"
                                         ? "كود واسم النموذج السريري"
                                         : "Checklist Title"}
@@ -19593,7 +19735,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                                   <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-50">
                                     <div>
-                                      <span className="block text-[10px] text-slate-400 font-bold">
+                                      <span className="block text-[10px] text-slate-500 font-bold">
                                         {language === "ar"
                                           ? "القسم والموقع"
                                           : "Ward / Dept"}
@@ -19603,7 +19745,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                       </span>
                                     </div>
                                     <div>
-                                      <span className="block text-[10px] text-slate-400 font-bold">
+                                      <span className="block text-[10px] text-slate-500 font-bold">
                                         {language === "ar"
                                           ? "تاريخ الحفظ والتدقيق"
                                           : "Archived Date"}
@@ -19615,7 +19757,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                   </div>
 
                                   <div className="pt-2 border-t border-slate-50">
-                                    <span className="block text-[10px] text-slate-400 font-bold">
+                                    <span className="block text-[10px] text-slate-500 font-bold">
                                       {language === "ar"
                                         ? "الموظف المسؤول (التمريض/المدقق)"
                                         : "Staff Nurse of Duty"}
@@ -19686,7 +19828,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                       <span className="text-[14px] inline-block mb-0.5">
                                         🎖️
                                       </span>
-                                      <span className="block text-[9px] text-slate-400 font-black tracking-widest">
+                                      <span className="block text-[9px] text-slate-500 font-black tracking-widest">
                                         CLINICAL AUDIT DEPT
                                       </span>
                                       <span className="inline-block mt-1 text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full">
@@ -19700,7 +19842,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                                   {/* Document filling check matrix */}
                                   <div>
-                                    <span className="block text-[10px] text-slate-400 font-bold mb-1.5">
+                                    <span className="block text-[10px] text-slate-500 font-bold mb-1.5">
                                       {language === "ar"
                                         ? "أصناف الجرد المسجلة بالسجل"
                                         : "Registered items list"}
@@ -19727,7 +19869,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                                   ? item.itemAr
                                                   : item.itemEn}
                                               </div>
-                                              <span className="text-[9px] text-slate-400 font-mono">
+                                              <span className="text-[9px] text-slate-500 font-mono">
                                                 ({item.code})
                                               </span>
                                             </div>
@@ -19777,7 +19919,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             );
                           })()
                         ) : (
-                          <div className="bg-slate-50 border rounded-xl border-dashed border-slate-200 p-8 text-center text-slate-400 text-xs font-semibold py-24 leading-relaxed">
+                          <div className="bg-slate-50 border rounded-xl border-dashed border-slate-200 p-8 text-center text-slate-500 text-xs font-semibold py-24 leading-relaxed">
                             <Info className="h-8 w-8 text-slate-300 mx-auto mb-2" />
                             {language === "ar"
                               ? "اضغط على أي سجل بالجدول لعرض التفاصيل الكاملة لقائمة الفحص وعلامات مطابقة الجودة السحابية التابعة للمستشفى."
@@ -20798,7 +20940,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                       <div className="flex justify-end pt-1">
                         <button
                           onClick={handleAddSystemUser}
-                          className="px-5 py-2 bg-slate-850 hover:bg-slate-900 bg-slate-800 text-white font-extrabold rounded-lg shadow-md transition cursor-pointer flex items-center gap-1.5"
+                          className="px-5 py-2 bg-slate-850 hover:bg-slate-50 bg-slate-800 text-white font-extrabold rounded-lg shadow-md transition cursor-pointer flex items-center gap-1.5"
                         >
                           <Plus className="h-4 w-4" />
                           <span>
@@ -20853,7 +20995,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                         <div className="bg-white p-3.5 rounded-lg border border-slate-200 space-y-4 text-right">
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             <div>
-                              <label className="block text-[9px] font-bold text-slate-400 mb-1">
+                              <label className="block text-[9px] font-bold text-slate-500 mb-1">
                                 الاسم بالعربية
                               </label>
                               <input
@@ -20870,7 +21012,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             </div>
 
                             <div>
-                              <label className="block text-[9px] font-bold text-slate-400 mb-1 font-mono">
+                              <label className="block text-[9px] font-bold text-slate-500 mb-1 font-mono">
                                 الاسم بالإنجليزية
                               </label>
                               <input
@@ -20887,7 +21029,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             </div>
 
                             <div>
-                              <label className="block text-[9px] font-bold text-slate-400 mb-1">
+                              <label className="block text-[9px] font-bold text-slate-500 mb-1">
                                 كود الموظف التعريفي
                               </label>
                               <input
@@ -20904,7 +21046,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             </div>
 
                             <div>
-                              <label className="block text-[9px] font-bold text-slate-400 mb-1">
+                              <label className="block text-[9px] font-bold text-slate-500 mb-1">
                                 الدور والصلاحيات
                               </label>
                               <select
@@ -20945,7 +21087,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             </div>
 
                             <div>
-                              <label className="block text-[9px] font-bold text-slate-400 mb-1">
+                              <label className="block text-[9px] font-bold text-slate-500 mb-1">
                                 القسم الطبي
                               </label>
                               <select
@@ -21150,7 +21292,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                         className={`px-2 py-1 rounded text-[10px] font-bold border transition ${
                                           stateVal === "default"
                                             ? "bg-slate-150 border-slate-300 text-slate-700 font-extrabold bg-slate-200"
-                                            : "bg-white border-slate-200 text-slate-400 hover:bg-slate-50"
+                                            : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
                                         }`}
                                       >
                                         عام (موروث)
@@ -21285,7 +21427,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                             placeholder="البحث بالاسم، كود الموظف، الصلاحيات..."
                             className="w-full pr-8 pl-8 py-1.5 bg-slate-50/50 text-slate-700 border border-slate-200 rounded-lg text-xs outline-none focus:ring-1 focus:ring-pink-500 focus:border-pink-500 transition focus:bg-white"
                           />
-                          <Search className="absolute right-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
+                          <Search className="absolute right-2.5 top-2 h-3.5 w-3.5 text-slate-500" />
                           {userRegistrySearch && (
                             <button
                               onClick={() => {
@@ -21364,7 +21506,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                           if (paginated.length === 0) {
                             return (
                               <div
-                                className="py-12 text-center text-slate-400 text-xs"
+                                className="py-12 text-center text-slate-500 text-xs"
                                 dir="rtl"
                               >
                                 لا توجد أي نتائج مطابقة لمصطلح البحث "
@@ -21411,7 +21553,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                             e.stopPropagation();
                                             handleDeleteSystemUser(usr.id);
                                           }}
-                                          className="p-1 rounded transition text-slate-400 hover:text-rose-650 hover:bg-rose-50"
+                                          className="p-1 rounded transition text-slate-500 hover:text-rose-650 hover:bg-rose-50"
                                           title="إلغاء تفعيل الموظف"
                                         >
                                           <Trash2 className="h-3 w-3" />
@@ -21429,7 +21571,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                             {usr.nameAr}
                                           </span>
                                         </div>
-                                        <span className="text-[10px] text-slate-400 font-mono block uppercase tracking-wide leading-none mt-1 truncate">
+                                        <span className="text-[10px] text-slate-500 font-mono block uppercase tracking-wide leading-none mt-1 truncate">
                                           {usr.nameEn}
                                         </span>
 
@@ -21666,7 +21808,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                       </div>
 
                       {/* HIPAA Compliance Authentication Panel */}
-                      <div className="bg-slate-900 text-white p-4 rounded-xl border border-pink-500/20 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                      <div className="bg-slate-50 text-slate-800 p-4 rounded-xl border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
                         <div className="text-right">
                           <span className="inline-flex items-center gap-1.5 bg-pink-600/20 text-pink-400 text-[10px] font-black px-2.5 py-0.5 rounded-full mb-1">
                             <ShieldAlert className="w-3.5 h-3.5 text-pink-500" />
@@ -21681,7 +21823,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                               ? "المصادقة الإدارية وتدقيق الصلاحيات النشطة"
                               : "Administrative Authentication Required"}
                           </h5>
-                          <p className="text-[10px] text-slate-400 mt-1">
+                          <p className="text-[10px] text-slate-500 mt-1">
                             {language === "ar"
                               ? "لفتح إمكانية التعديل على جميع التبويبات والمصفوفات والاختيارات، أدخل الرقم السري المصرح به (افتراضي: 2026):"
                               : "To enable full editing access on all matrix boxes, roles, and tabs, enter your secure passcode (default: 2026):"}
@@ -21691,7 +21833,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                         <div className="flex items-center gap-2 w-full md:justify-end">
                           {isRbacAdminAuthenticated ? (
                             <div className="flex flex-col items-end gap-1.5">
-                              <div className="flex items-center gap-1.5 text-emerald-400 font-extrabold text-xs bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-lg font-sans">
+                              <div className="flex items-center gap-1.5 text-emerald-600 font-extrabold text-xs bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-lg font-sans">
                                 <span className="w-2 h-2 bg-emerald-400 rounded-full animate-ping"></span>
                                 <span>
                                   {language === "ar"
@@ -21721,7 +21863,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                 onChange={(e) =>
                                   setRbacAdminUserId(e.target.value)
                                 }
-                                className="bg-slate-950 border border-slate-750 text-white rounded-lg py-1.5 px-3 focus:outline-none focus:border-pink-500 text-xs text-right font-bold flex-1"
+                                className="bg-white border border-slate-200 text-slate-800 rounded-lg py-1.5 px-3 focus:outline-none focus:border-pink-500 text-xs text-right font-bold flex-1"
                               >
                                 <option value="">
                                   {language === "ar"
@@ -21752,7 +21894,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                 onChange={(e) =>
                                   setRbacAdminPasscode(e.target.value)
                                 }
-                                className="bg-slate-950 border border-slate-750 text-white rounded-lg py-1.5 px-3 focus:outline-none focus:border-pink-500 text-xs text-center font-bold font-mono w-24"
+                                className="bg-white border border-slate-200 text-slate-800 rounded-lg py-1.5 px-3 focus:outline-none focus:border-pink-500 text-xs text-center font-bold font-mono w-24"
                               />
                               <button
                                 onClick={() => {
@@ -21814,7 +21956,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                       ? role.nameAr
                                       : role.nameEn}
                                   </div>
-                                  <div className="text-[8px] font-mono text-slate-400 font-semibold uppercase">
+                                  <div className="text-[8px] font-mono text-slate-500 font-semibold uppercase">
                                     {role.id}
                                   </div>
 
@@ -21858,7 +22000,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                       ? policy.nameAr
                                       : policy.nameEn}
                                   </div>
-                                  <div className="text-[9px] text-slate-400 font-mono font-medium">
+                                  <div className="text-[9px] text-slate-500 font-mono font-medium">
                                     {policy.id}
                                   </div>
 
@@ -21951,15 +22093,15 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
           {activeTab === "it_panel" && itSubTab === "system_settings" && (
             <div className="space-y-6 animate-fade font-sans text-right">
               {/* STATE-OF-THE-ART DEPARTMENT MANAGER VAULT & SYSTEM CUSTOMIZATION */}
-              <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl space-y-6 text-right border border-pink-900/30">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-white/10 pb-4">
+              <div className="bg-white text-slate-800 p-6 rounded-2xl shadow-sm space-y-6 text-right border border-slate-200">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-4">
                   <div className="flex items-center gap-2 justify-end">
                     <div className="bg-pink-500 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
                       {language === "ar"
                         ? "خزنة النظام الآمنة"
                         : "SECURITY VAULT"}
                     </div>
-                    <h3 className="font-extrabold text-base text-pink-100 flex items-center gap-1.5 font-sans">
+                    <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-1.5 font-sans">
                       <span>
                         إدارة مدراء الأقسام، التخصيص والأرشيفات الذكية
                       </span>
@@ -21970,14 +22112,14 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                 {/* Section A: Branded Customizer */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-slate-950/65 p-4 rounded-xl border border-white/5 space-y-3">
-                    <h4 className="font-bold text-xs text-pink-300">
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
+                    <h4 className="font-bold text-xs text-pink-600">
                       📱{" "}
                       {language === "ar"
                         ? "لوحة التخصيص وتحديد ألوان الهوية البصرية"
                         : "Visual Identity & Palette Launcher"}
                     </h4>
-                    <p className="text-[10.5px] text-slate-400">
+                    <p className="text-[10.5px] text-slate-500">
                       {language === "ar"
                         ? "حدد المظهر البصري العام للوحات التحليل والتقارير بمؤسستك:"
                         : "Switch global highlight theme and accent color systems:"}
@@ -22000,7 +22142,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                               : "Rose-Pink theme activated!",
                           );
                         }}
-                        className="p-2.5 bg-pink-955/20 bg-pink-950/40 hover:bg-pink-900/40 text-pink-300 border border-pink-700/40 rounded-lg text-right font-bold transition flex items-center justify-between cursor-pointer"
+                        className="p-2.5 bg-pink-955/20 bg-pink-950/40 hover:bg-pink-900/40 text-pink-600 border border-pink-700/40 rounded-lg text-right font-bold transition flex items-center justify-between cursor-pointer"
                       >
                         <span className="h-2 w-2 rounded-full bg-pink-500"></span>
                         <span>
@@ -22090,14 +22232,14 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                     </div>
                   </div>
 
-                  <div className="bg-slate-950/65 p-4 rounded-xl border border-white/5 space-y-3">
-                    <h4 className="font-bold text-xs text-pink-300">
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
+                    <h4 className="font-bold text-xs text-pink-600">
                       ✍️{" "}
                       {language === "ar"
                         ? "تحديد توقيعات ومسميات رؤساء الشعب والمدراء"
                         : "Official Signatories Configurator"}
                     </h4>
-                    <p className="text-[10.5px] text-slate-400">
+                    <p className="text-[10.5px] text-slate-500">
                       {language === "ar"
                         ? "تعديل أسماء مديرة التمريض ومدير المستشفى دائمي الاعتماد:"
                         : "Configure permanent default signatories appearing on print:"}
@@ -22105,7 +22247,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                       <div className="space-y-1">
-                        <label className="block text-[10px] text-slate-400">
+                        <label className="block text-[10px] text-slate-500">
                           {language === "ar"
                             ? "اسم مديرة التمريض (CNO):"
                             : "Chief Nursing Officer:"}
@@ -22120,11 +22262,11 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                               e.target.value,
                             );
                           }}
-                          className="w-full bg-slate-900 text-pink-200 border border-white/10 rounded px-2 py-1 text-xs font-bold outline-none"
+                          className="w-full bg-slate-50 text-pink-200 border border-white/10 rounded px-2 py-1 text-xs font-bold outline-none"
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="block text-[10px] text-slate-400">
+                        <label className="block text-[10px] text-slate-500">
                           {language === "ar"
                             ? "اسم مدير المنشأة (Director):"
                             : "Medical Director:"}
@@ -22139,7 +22281,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                               e.target.value,
                             );
                           }}
-                          className="w-full bg-slate-900 text-pink-200 border border-white/10 rounded px-2 py-1 text-xs font-bold outline-none"
+                          className="w-full bg-slate-50 text-pink-200 border border-white/10 rounded px-2 py-1 text-xs font-bold outline-none"
                         />
                       </div>
                     </div>
@@ -22147,14 +22289,14 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                 </div>
 
                 {/* Section B: State-Of-The-Art Department Manager Vault */}
-                <div className="bg-slate-950/70 p-5 rounded-xl border border-white/15 space-y-3">
+                <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-3">
                   <div className="flex items-center justify-between border-b border-white/10 pb-2">
                     <span className="bg-emerald-900/80 text-emerald-300 font-bold px-2 py-0.5 rounded text-[9px] uppercase tracking-wider">
                       {language === "ar"
                         ? "نشط ومؤمّن"
                         : "SECURE PASSCODE LOCKS"}
                     </span>
-                    <h4 className="font-black text-xs text-pink-300 flex items-center gap-1.5">
+                    <h4 className="font-black text-xs text-pink-600 flex items-center gap-1.5">
                       <span>
                         🛡️ خزنة مدراء الأقسام ورؤساء الشعب (Department Manager
                         Ledger)
@@ -22163,7 +22305,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                     </h4>
                   </div>
 
-                  <p className="text-[10.5px] text-slate-400">
+                  <p className="text-[10.5px] text-slate-500">
                     {language === "ar"
                       ? "تتبع ورصد حسابات مشرفي الأقسام، مع إمكانية تعديل كلمات مرورهم (PIN) وتفويض أو إبطال أختامهم السريرية فورا:"
                       : "Ledger containing department heads, their administrative PIN codes, and live certification stamps override console:"}
@@ -22172,7 +22314,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                   <div className="overflow-x-auto text-[11px] font-sans pt-1">
                     <table className="w-full text-right text-slate-300 bg-transparent">
                       <thead>
-                        <tr className="bg-slate-900/90 text-slate-400 font-bold border-b border-white/10">
+                        <tr className="bg-slate-50/90 text-slate-500 font-bold border-b border-white/10">
                           <th className="p-2.5 text-right">
                             {language === "ar"
                               ? "الواحدات والأقسام"
@@ -22222,7 +22364,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                               key={idxVal}
                               className="hover:bg-white/5 transition"
                             >
-                              <td className="p-2.5 font-bold text-white text-right">
+                              <td className="p-2.5 font-bold text-slate-800 text-right">
                                 {dept}
                               </td>
                               <td className="p-2.5 font-bold text-pink-200 text-right">
@@ -22233,11 +22375,11 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                               <td className="p-2.5 text-center font-mono text-slate-450">
                                 {manager.staffId}
                               </td>
-                              <td className="p-2.5 text-center font-mono font-bold text-emerald-400">
+                              <td className="p-2.5 text-center font-mono font-bold text-emerald-600">
                                 {manager.pin}
                               </td>
                               <td className="p-2.5 text-center">
-                                <span className="px-2 py-0.5 rounded text-[9.5px] bg-emerald-950 text-emerald-400 border border-emerald-800/40 font-bold whitespace-nowrap">
+                                <span className="px-2 py-0.5 rounded text-[9.5px] bg-emerald-950 text-emerald-600 border border-emerald-800/40 font-bold whitespace-nowrap">
                                   {language === "ar"
                                     ? "✓ معتمد تلقائيا"
                                     : "✓ Trusted"}
@@ -22304,7 +22446,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                                       );
                                     }
                                   }}
-                                  className="px-2.5 py-1 bg-pink-900/50 hover:bg-pink-700/60 text-pink-100 rounded text-[9.5px] font-bold transition cursor-pointer whitespace-nowrap shadow-sm"
+                                  className="px-2.5 py-1 bg-pink-900/50 hover:bg-pink-700/60 text-slate-900 rounded text-[9.5px] font-bold transition cursor-pointer whitespace-nowrap shadow-sm"
                                 >
                                   ⚙️{" "}
                                   {language === "ar"
@@ -22325,7 +22467,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
         </main>
 
         {/* Persistent Status Footer - Hides on Print */}
-        <footer className="no-print bg-slate-900 border-t border-slate-800 text-slate-300 py-4 text-center text-xs sticky bottom-0 w-full z-15">
+        <footer className="no-print bg-white border-t border-slate-200 text-slate-600 py-4 text-center text-xs sticky bottom-0 w-full z-15">
           <div className="max-w-[95%] mx-auto px-4 flex flex-col xl:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3 shrink-0">
               <div className="w-8 h-8 rounded-lg bg-pink-600/20 border border-pink-500/50 flex items-center justify-center shrink-0">
@@ -22337,7 +22479,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                     ? hospitalSettings.appFooterAr
                     : hospitalSettings.appFooterEn}
                 </span>
-                <span className="block text-[9px] text-slate-400 font-sans">
+                <span className="block text-[9px] text-slate-500 font-sans">
                   {language === "ar"
                     ? hospitalSettings.accreditationBodyAr
                     : hospitalSettings.accreditationBodyEn}{" "}
@@ -22435,13 +22577,13 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
             </div>
 
             <div className="flex flex-col items-end gap-1 font-mono text-right shrink-0">
-              <div className="flex items-center gap-2 text-[10px] text-emerald-400 font-bold">
+              <div className="flex items-center gap-2 text-[10px] text-emerald-600 font-bold">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
                 <span className="uppercase text-[9px] tracking-widest bg-slate-800 border border-slate-750 px-2 py-0.5 rounded font-bold">
                   {currentUser.role.toUpperCase()} LEVEL ACCESS
                 </span>
               </div>
-              <span className="text-[9px] text-slate-400">
+              <span className="text-[9px] text-slate-500">
                 {language === "ar"
                   ? `الكادر الطبي الحالي: ${currentUser.nameAr} (${currentUser.staffId})`
                   : `Active Staff: ${currentUser.nameEn} (${currentUser.staffId})`}
@@ -22453,9 +22595,9 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
       {/* PASSCODE ACCESS VERIFICATION OVERLAY DIALOG MODAL (حماية لتغيير صلاحية الأدمن 1234) */}
       {passcodeModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
+        <div className="fixed inset-0 bg-slate-50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
           <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden animate-fade-in-up">
-            <div className="bg-slate-900 px-5 py-3.5 text-white flex justify-between items-center">
+            <div className="bg-slate-50 px-5 py-3.5 text-slate-800 flex justify-between items-center">
               <h4 className="text-xs font-mono font-bold uppercase tracking-widest flex items-center gap-1.5">
                 <Lock className="h-3.5 w-3.5 text-pink-500 animate-pulse" />
                 <span>
@@ -22469,7 +22611,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                   setPasscodeModalOpen(false);
                   setPendingUser(null);
                 }}
-                className="text-slate-400 hover:text-white transition"
+                className="text-slate-500 hover:text-white transition"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -22535,7 +22677,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
 
       {/* DETECTED EMERGENCY BREAK GLASS MODAL SCREEN */}
       {breakGlassAlert?.show && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all">
+        <div className="fixed inset-0 bg-slate-50/80 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all">
           <div className="bg-white rounded-3xl shadow-2xl border-4 border-red-600 max-w-lg w-full max-h-[calc(100vh-32px)] overflow-y-auto animate-fade-in text-right">
             <div className="bg-red-600 px-6 py-4 text-white flex justify-between items-center">
               <h4 className="text-sm font-black uppercase tracking-wider flex items-center gap-1.5 justify-end w-full">
@@ -22593,7 +22735,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
       )}
       {/* CUSTOM CELL EDIT MODAL */}
       {activeCellEdit && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
+        <div className="fixed inset-0 bg-slate-50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-fade-in font-sans text-right">
             {/* Header */}
             <div className="bg-gradient-to-r from-pink-750 to-pink-600 px-5 py-4 text-white flex justify-between items-center flex-row-reverse">
@@ -22714,7 +22856,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                           handleSaveCellEdit(inputEl.value.trim());
                         }
                       }}
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition cursor-pointer font-sans"
+                      className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition cursor-pointer font-sans"
                     >
                       {language === "ar" ? "تأكيد" : "Save"}
                     </button>
@@ -22751,7 +22893,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
       )}
       {/* CUSTOM ROSTER CELL EDIT MODAL */}
       {activeRosterCellEdit && (
-        <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-xs flex items-center justify-center z-50 p-4 transition-all">
+        <div className="fixed inset-0 bg-slate-50/65 backdrop-blur-xs flex items-center justify-center z-50 p-4 transition-all">
           <div
             className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-fade-in font-sans text-right"
             dir="rtl"
@@ -23137,7 +23279,7 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
             <div className="p-6 space-y-4">
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400 font-bold">
+                  <span className="text-[10px] text-slate-500 font-bold">
                     {language === "ar"
                       ? "المستلم المستهدف:"
                       : "Target Audience:"}

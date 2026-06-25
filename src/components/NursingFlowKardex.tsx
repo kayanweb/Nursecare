@@ -1,191 +1,216 @@
-import React, { useState, useEffect } from "react";
-import {
-  ClipboardList,
-  Plus,
-  Search,
-  Activity,
-  HeartPulse,
-  Stethoscope,
-  Clock,
-  ShieldAlert,
-} from "lucide-react";
-import { syncSetting, saveSetting } from "../lib/firestoreService";
+import React, { useState } from "react";
+import { ClipboardList, Activity, Droplet, UserCheck, ShieldAlert, HeartPulse, ListPlus } from "lucide-react";
 import { toast } from "sonner";
 
-interface VitalNote {
-  id: string;
-  patientName: string;
-  bedId: string;
-  bp: string;
-  hr: string;
-  temp: string;
-  spo2: string;
-  note: string;
-  nurseId: string;
-  timestamp: string;
+interface Props {
+  language: "ar" | "en";
 }
 
-export default function NursingFlowKardex({
-  language,
-}: {
-  language: "ar" | "en";
-}) {
+export default function NursingFlowKardex({ language }: Props) {
   const isAr = language === "ar";
-  const [notes, setNotes] = useState<VitalNote[]>([]);
+  const [activeTab, setActiveTab] = useState<"vitals" | "io" | "assessments">("vitals");
 
-  useEffect(() => {
-    const unsub = syncSetting("his_nursing_kardex", (data) => {
-      if (data?.value && Array.isArray(data.value)) {
-        setNotes(data.value);
-      } else {
-        const seeded: VitalNote[] = [
-          {
-            id: "NT-01",
-            patientName: "Amina Saleh",
-            bedId: "ICU-B1",
-            bp: "120/80",
-            hr: "85",
-            temp: "37.1",
-            spo2: "98%",
-            note: "Patient stable. IV fluids running.",
-            nurseId: "Nurse Salma",
-            timestamp: new Date().toISOString(),
-          },
-          {
-            id: "NT-02",
-            patientName: "Said Kamal",
-            bedId: "WARD-A-12",
-            bp: "140/90",
-            hr: "92",
-            temp: "38.2",
-            spo2: "95%",
-            note: "Mild fever, administered Paracetamol as per PRN orders.",
-            nurseId: "Nurse Yousef",
-            timestamp: new Date(Date.now() - 3600000).toISOString(),
-          },
-        ];
-        setNotes(seeded);
-        saveSetting("his_nursing_kardex", seeded);
-      }
-    });
-    return () => unsub();
-  }, []);
+  const [gcsScore, setGcsScore] = useState({ eye: 4, verbal: 5, motor: 6 });
+  const [bradenScore, setBradenScore] = useState({ sensory: 4, moisture: 4, activity: 4, mobility: 4, nutrition: 4, friction: 3 });
+
+  const totalGCS = gcsScore.eye + gcsScore.verbal + gcsScore.motor;
+  const totalBraden = bradenScore.sensory + bradenScore.moisture + bradenScore.activity + bradenScore.mobility + bradenScore.nutrition + bradenScore.friction;
+
+  const handleSaveAssessment = () => {
+    toast.success(isAr ? "تم حفظ التقييم بنجاح!" : "Assessment saved successfully!");
+  };
 
   return (
-    <div
-      className="p-4 md:p-6 bg-slate-50 min-h-full"
-      dir={isAr ? "rtl" : "ltr"}
-    >
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-slate-200 pb-4">
+    <div className="p-4 md:p-6 bg-slate-50 min-h-full font-sans" dir={isAr ? "rtl" : "ltr"}>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h2 className="text-2xl font-black text-rose-800 flex items-center gap-2">
-            <ClipboardList className="h-7 w-7 text-rose-600" />
-            {isAr ? "يوميات التمريض (Kardex)" : "Nursing Flow & Kardex"}
+          <h2 className="text-2xl font-black text-slate-800 flex items-center gap-2">
+            <ClipboardList className="w-7 h-7 text-rose-600" />
+            {isAr ? "شيتات التمريض المتخصصة (Intensive Flowsheets)" : "Intensive Nursing Flowsheets"}
           </h2>
-          <p className="text-sm font-bold text-rose-600/70 mt-1">
-            {isAr
-              ? "متابعة العلامات الحيوية، والملاحظات اليومية، والسوائل"
-              : "Daily progress notes, vitals, fluid input/output, and BCMA"}
+          <p className="text-slate-500 font-medium mt-1">
+            {isAr ? "العلامات الحيوية المستمرة، السوائل، وتقييمات الوعي ومخاطر السقوط." : "Continuous vitals, intensive I/O, and specialized clinical assessments."}
           </p>
         </div>
-        <button className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2 transition whitespace-nowrap">
-          <Plus className="h-4 w-4" />{" "}
-          {isAr ? "إضافة تقييم جديد" : "New Assessment"}
-        </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
-        {notes.map((note) => (
-          <div
-            key={note.id}
-            className="bg-white rounded-xl border border-rose-100 shadow-sm p-5 hover:border-rose-300 transition"
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+        {/* Patient Banner */}
+        <div className="p-4 bg-slate-800 text-white flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex gap-4 items-center">
+            <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center font-black text-xl shrink-0">
+              S
+            </div>
+            <div>
+              <h3 className="font-black text-lg leading-tight">Said Kamal</h3>
+              <div className="flex flex-wrap gap-2 text-xs text-slate-300 mt-1 font-mono">
+                <span>MRN-2026-0341</span>
+                <span>|</span>
+                <span>ICU-BED-04</span>
+                <span>|</span>
+                <span className="bg-rose-500/20 text-rose-300 px-2 rounded">High Risk</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="flex border-b border-slate-200 bg-slate-50 overflow-x-auto">
+          <button 
+            onClick={() => setActiveTab("vitals")}
+            className={`flex items-center gap-2 px-6 py-4 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === "vitals" ? "bg-white text-rose-600 border-b-2 border-rose-600" : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"}`}
           >
-            <div className="flex justify-between items-start border-b border-slate-100 pb-3 mb-3">
-              <div>
-                <h3 className="text-lg font-black text-slate-800">
-                  {note.patientName}
-                </h3>
-                <div className="text-xs font-bold text-slate-500 font-mono mt-1 flex items-center gap-2">
-                  <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                    {note.bedId}
-                  </span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />{" "}
-                    {new Date(note.timestamp).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
+            <Activity className="w-4 h-4"/> {isAr ? "العلامات الحيوية" : "Continuous Vitals"}
+          </button>
+          <button 
+            onClick={() => setActiveTab("io")}
+            className={`flex items-center gap-2 px-6 py-4 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === "io" ? "bg-white text-blue-600 border-b-2 border-blue-600" : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"}`}
+          >
+            <Droplet className="w-4 h-4"/> {isAr ? "شيت السوائل" : "Intake / Output"}
+          </button>
+          <button 
+            onClick={() => setActiveTab("assessments")}
+            className={`flex items-center gap-2 px-6 py-4 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === "assessments" ? "bg-white text-emerald-600 border-b-2 border-emerald-600" : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"}`}
+          >
+            <UserCheck className="w-4 h-4"/> {isAr ? "التقييمات التخصصية" : "Clinical Assessments"}
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className="p-6">
+          
+          {activeTab === "vitals" && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="flex justify-between items-center">
+                <h4 className="font-bold text-slate-700">{isAr ? "تسجيل العلامات الحيوية" : "Record Vitals"}</h4>
+                <button className="bg-slate-100 text-slate-700 p-2 rounded-xl hover:bg-slate-200 transition font-bold text-xs flex items-center gap-2">
+                  <HeartPulse className="w-4 h-4"/> {isAr ? "قراءة من الأجهزة" : "Fetch from Monitors"}
+                </button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">BP (mmHg)</label>
+                  <input type="text" defaultValue="120/80" className="w-full border border-slate-200 rounded-xl p-2 text-sm focus:ring-2 focus:ring-rose-500 outline-none font-mono font-bold" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">HR (bpm)</label>
+                  <input type="text" defaultValue="85" className="w-full border border-slate-200 rounded-xl p-2 text-sm focus:ring-2 focus:ring-rose-500 outline-none font-mono font-bold" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Temp (°C)</label>
+                  <input type="text" defaultValue="37.2" className="w-full border border-slate-200 rounded-xl p-2 text-sm focus:ring-2 focus:ring-rose-500 outline-none font-mono font-bold" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">SpO2 (%)</label>
+                  <input type="text" defaultValue="98" className="w-full border border-slate-200 rounded-xl p-2 text-sm focus:ring-2 focus:ring-rose-500 outline-none font-mono font-bold" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">RR (bpm)</label>
+                  <input type="text" defaultValue="18" className="w-full border border-slate-200 rounded-xl p-2 text-sm focus:ring-2 focus:ring-rose-500 outline-none font-mono font-bold" />
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  {isAr ? "التمريض" : "Charting Nurse"}
-                </div>
-                <div className="text-sm font-bold text-rose-700">
-                  {note.nurseId}
-                </div>
+              <button className="bg-rose-600 text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-rose-700 transition">
+                {isAr ? "حفظ السجل" : "Save Vitals"}
+              </button>
+            </div>
+          )}
+
+          {activeTab === "io" && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 {/* Intake */}
+                 <div className="border border-blue-100 rounded-2xl p-4 bg-blue-50/50">
+                    <h4 className="font-black text-blue-800 mb-4 flex items-center gap-2">
+                      <ListPlus className="w-5 h-5"/> {isAr ? "المدخلات (Intake)" : "Intake"}
+                    </h4>
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <select className="border border-slate-200 rounded-xl p-2 text-sm flex-1 focus:outline-none">
+                          <option>IV Fluid (Normal Saline)</option>
+                          <option>Oral (Water)</option>
+                          <option>Blood Transfusion</option>
+                        </select>
+                        <input type="number" placeholder="ml" className="w-24 border border-slate-200 rounded-xl p-2 text-sm focus:outline-none" />
+                        <button className="bg-blue-600 text-white px-4 rounded-xl font-bold text-sm hover:bg-blue-700">+</button>
+                      </div>
+                    </div>
+                 </div>
+
+                 {/* Output */}
+                 <div className="border border-amber-100 rounded-2xl p-4 bg-amber-50/50">
+                    <h4 className="font-black text-amber-800 mb-4 flex items-center gap-2">
+                      <ListPlus className="w-5 h-5"/> {isAr ? "المخرجات (Output)" : "Output"}
+                    </h4>
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <select className="border border-slate-200 rounded-xl p-2 text-sm flex-1 focus:outline-none">
+                          <option>Urine (Catheter)</option>
+                          <option>Drain (Surgical)</option>
+                          <option>Emesis / Vomitus</option>
+                        </select>
+                        <input type="number" placeholder="ml" className="w-24 border border-slate-200 rounded-xl p-2 text-sm focus:outline-none" />
+                        <button className="bg-amber-600 text-white px-4 rounded-xl font-bold text-sm hover:bg-amber-700">+</button>
+                      </div>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="bg-slate-800 text-white p-4 rounded-2xl flex justify-between items-center">
+                <span className="font-bold">{isAr ? "ميزان السوائل (24H Balance)" : "24H Fluid Balance"}</span>
+                <span className="font-mono text-xl font-black text-emerald-400">+ 150 ml</span>
               </div>
             </div>
+          )}
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-center">
-                <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">
-                  BP
+          {activeTab === "assessments" && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
+              {/* GCS */}
+              <div className="border border-slate-200 rounded-2xl p-4">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
+                  <h4 className="font-black text-slate-800">Glasgow Coma Scale (GCS)</h4>
+                  <div className="bg-indigo-100 text-indigo-800 font-black text-xl px-3 py-1 rounded-lg">
+                    {totalGCS}/15
+                  </div>
                 </div>
-                <div className="font-mono font-black text-slate-700">
-                  {note.bp}
-                </div>
-              </div>
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-center">
-                <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">
-                  HR
-                </div>
-                <div className="font-mono font-black text-rose-600 flex items-center justify-center gap-1">
-                  <HeartPulse className="w-3 h-3" /> {note.hr}
-                </div>
-              </div>
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-center">
-                <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">
-                  TEMP
-                </div>
-                <div className="font-mono font-black text-amber-600">
-                  {note.temp}°C
-                </div>
-              </div>
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-center">
-                <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">
-                  SPO2
-                </div>
-                <div className="font-mono font-black text-blue-600">
-                  {note.spo2}
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 mb-2 block">Eye Opening (E)</label>
+                    <input type="range" min="1" max="4" value={gcsScore.eye} onChange={(e) => setGcsScore({...gcsScore, eye: parseInt(e.target.value)})} className="w-full accent-indigo-600" />
+                    <div className="text-xs text-center font-medium text-slate-700 mt-1">Score: {gcsScore.eye}</div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 mb-2 block">Verbal Response (V)</label>
+                    <input type="range" min="1" max="5" value={gcsScore.verbal} onChange={(e) => setGcsScore({...gcsScore, verbal: parseInt(e.target.value)})} className="w-full accent-indigo-600" />
+                    <div className="text-xs text-center font-medium text-slate-700 mt-1">Score: {gcsScore.verbal}</div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 mb-2 block">Motor Response (M)</label>
+                    <input type="range" min="1" max="6" value={gcsScore.motor} onChange={(e) => setGcsScore({...gcsScore, motor: parseInt(e.target.value)})} className="w-full accent-indigo-600" />
+                    <div className="text-xs text-center font-medium text-slate-700 mt-1">Score: {gcsScore.motor}</div>
+                  </div>
                 </div>
               </div>
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-center flex flex-col justify-center items-center col-span-2 md:col-span-1 hover:bg-slate-100 cursor-pointer transition">
-                <Activity className="w-5 h-5 text-slate-400 mb-1" />
-                <span className="text-xs font-bold text-slate-500">
-                  {isAr ? "رسم القلب" : "Trend"}
-                </span>
+
+              {/* Braden Scale */}
+              <div className="border border-slate-200 rounded-2xl p-4 flex flex-col">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
+                  <h4 className="font-black text-slate-800">Braden Scale (Pressure Ulcer Risk)</h4>
+                  <div className={`font-black text-xl px-3 py-1 rounded-lg ${totalBraden <= 9 ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                    {totalBraden}
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500 mb-4 flex-1">
+                   {isAr ? "تقييم مخاطر تقرحات الفراش. (أقل من 9 = خطر شديد)." : "Pressure ulcer risk assessment. (Below 9 = Severe risk)."}
+                </p>
+                
+                <button onClick={handleSaveAssessment} className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 transition">
+                  {isAr ? "اعتماد التقييمات" : "Sign & Submit Assessments"}
+                </button>
               </div>
+
             </div>
-
-            <div className="bg-rose-50/50 p-4 rounded-lg border border-rose-100">
-              <div className="flex items-start gap-3">
-                <Stethoscope className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-                <p className="text-sm font-bold text-slate-700">{note.note}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {notes.length === 0 && (
-          <div className="bg-white rounded-xl border border-dashed border-slate-300 p-12 text-center text-slate-400 font-bold">
-            {isAr
-              ? "لا توجد ملاحظات تمريضية اليوم"
-              : "No nursing notes for today"}
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
