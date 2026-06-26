@@ -786,6 +786,13 @@ export const SystemSettingsContext = React.createContext<{
   setHospitalSettings: () => {},
 });
 export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    return sessionStorage.getItem("hospital_isLoggedIn") === "true";
+  });
+  useEffect(() => {
+    sessionStorage.setItem("hospital_isLoggedIn", String(isLoggedIn));
+  }, [isLoggedIn]);
+
   useEffect(() => {
     fetch("/api/settings/get-settings")
       .then((r) => r.json())
@@ -805,6 +812,28 @@ export default function App() {
         console.warn("Failed to fetch settings from server:", e.message),
       );
   }, []);
+  // State definitions moved to top
+  const [currentUser, setCurrentUser] = useState<AppUser>(() => {
+    const saved = sessionStorage.getItem("hospital_currentUser");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return MOCK_USERS[0];
+      }
+    }
+    return MOCK_USERS[0];
+  });
+
+  useEffect(() => {
+    if (currentUser) {
+      sessionStorage.setItem(
+        "hospital_currentUser",
+        JSON.stringify(currentUser),
+      );
+    }
+  }, [currentUser]);
+
   const [hospitalSettings, setHospitalSettings] = useState<any>({
     nameAr: "مستشفى الرعاية السريرية الموحدة",
     taglineAr: "نحو رعاية طبية آمنة وممتازة وجودة مستدامة",
@@ -856,18 +885,35 @@ export default function App() {
     ],
   });
 
+
   return (
     <HISProvider>
       <SystemSettingsContext.Provider
         value={{ hospitalSettings, setHospitalSettings }}
       >
-        <AppContent />
+        <AppContent
+          isLoggedIn={isLoggedIn}
+          setIsLoggedIn={setIsLoggedIn}
+          currentUser={currentUser}
+          setCurrentUser={setCurrentUser}
+        />
+
       </SystemSettingsContext.Provider>
     </HISProvider>
   );
 }
 
-function AppContent() {
+function AppContent({
+  isLoggedIn,
+  setIsLoggedIn,
+  currentUser,
+  setCurrentUser,
+}: {
+  isLoggedIn: boolean;
+  setIsLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
+  currentUser: AppUser;
+  setCurrentUser: React.Dispatch<React.SetStateAction<AppUser>>;
+}) {
   const { hospitalSettings, setHospitalSettings } = React.useContext(
     SystemSettingsContext,
   );
@@ -883,10 +929,14 @@ function AppContent() {
   const [records, setRecords] = useFirestoreSync<SavedRecord>(
     syncClinicalRecords,
     [],
+    [],
+    isLoggedIn,
   );
   const [customTemplates, setCustomTemplates] = useFirestoreSync<FormTemplate>(
     syncCustomTemplates,
     [],
+    [],
+    isLoggedIn,
   );
   const [customTplSearch, setCustomTplSearch] = useState<string>("");
   const [customTplDeptFilter, setCustomTplDeptFilter] = useState<string>("ALL");
@@ -1051,17 +1101,23 @@ function AppContent() {
       categoryEn: "Form",
       createdAt: "2026-01-01",
     })),
+    [],
+    isLoggedIn,
   );
 
   const [dailyChecklists, setDailyChecklists, dailyChecklistsLoaded] =
-    useFirestoreSync<UnitDailyChecklist>(syncDailyAudits, []);
+    useFirestoreSync<UnitDailyChecklist>(syncDailyAudits, [], [], isLoggedIn);
   const [dailyDuties, setDailyDuties] = useFirestoreSync<any>(
     syncDailyDuties,
     [],
+    [],
+    isLoggedIn,
   );
   const [emergencyTeams, setEmergencyTeams] = useFirestoreSync<any>(
     syncEmergencyTeams,
     [],
+    [],
+    isLoggedIn,
   );
 
   const [rolePermissions, setRolePermissions] = useState(() => {
@@ -1244,10 +1300,10 @@ function AppContent() {
 
   // Roster states populated from localStorage or generated matching PDF format
   const [rosterList, rawSetRosterList, rosterListLoaded] =
-    useFirestoreSync<any>(syncDepartmentRosters, []);
+    useFirestoreSync<any>(syncDepartmentRosters, [], [], isLoggedIn);
 
   const [rosterWishes, rawSetRosterWishes, rosterWishesLoaded] =
-    useFirestoreSync<any>(syncRosterWishes, []);
+    useFirestoreSync<any>(syncRosterWishes, [], [], isLoggedIn);
 
   const [rosterAuditLogs, setRosterAuditLogs] = useState<RosterAuditLog[]>([]);
 
@@ -2142,7 +2198,7 @@ Full administrative override and emergency clinical execution privileges have be
       nameAr: "مفتش التدقيق والاعتماد (GAHAR Auditor)",
       nameEn: "GAHAR / JCI Auditor",
     },
-  ]);
+  ], [], isLoggedIn);
 
   const [permissionsList, setPermissionsList] = useFirestoreSync<any>(
     syncPermissions,
@@ -2319,11 +2375,15 @@ Full administrative override and emergency clinical execution privileges have be
         nameEn: "Infection Control Hub",
       },
     ],
+    [],
+    isLoggedIn,
   );
 
   const [accessMatrix, setAccessMatrix] = useFirestoreSync<any>(
     syncAccessMatrix,
     [],
+    [],
+    isLoggedIn,
   );
 
   // Seeding default Roles & Permissions if Firestore collections are blank
@@ -3151,35 +3211,6 @@ Full administrative override and emergency clinical execution privileges have be
     return defaults[permissionId]?.includes(roleId) || false;
   };
 
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    return sessionStorage.getItem("hospital_isLoggedIn") === "true";
-  });
-
-  const [currentUser, setCurrentUser] = useState<AppUser>(() => {
-    const saved = sessionStorage.getItem("hospital_currentUser");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return MOCK_USERS[0];
-      }
-    }
-    return MOCK_USERS[0];
-  });
-
-  useEffect(() => {
-    sessionStorage.setItem("hospital_isLoggedIn", String(isLoggedIn));
-  }, [isLoggedIn]);
-
-  useEffect(() => {
-    if (currentUser) {
-      sessionStorage.setItem(
-        "hospital_currentUser",
-        JSON.stringify(currentUser),
-      );
-    }
-  }, [currentUser]);
-
   // Synchronise logged-in user with systemUsers database updates in real-time immediately
   useEffect(() => {
     if (isLoggedIn && currentUser) {
@@ -3230,6 +3261,8 @@ Full administrative override and emergency clinical execution privileges have be
         status: "Resolved",
       },
     ],
+    [],
+    isLoggedIn,
   );
 
   // Notifications system for supervisors/auditors
@@ -3245,6 +3278,7 @@ Full administrative override and emergency clinical execution privileges have be
   ]);
 
   useEffect(() => {
+    if (!isLoggedIn) return;
     const unsub = syncSetting("baheya_notifications", (data: any) => {
       if (data && Array.isArray(data.value)) {
         setNotifications((prev: Notification[]) => {
@@ -3311,7 +3345,7 @@ Full administrative override and emergency clinical execution privileges have be
       }
     });
     return () => unsub();
-  }, [currentUser?.id, hospitalSettings.nameAr]);
+  }, [currentUser?.id, hospitalSettings.nameAr, isLoggedIn]);
 
   const isSupervisor = [
     "admin",
@@ -6388,6 +6422,17 @@ Full administrative override and emergency clinical execution privileges have be
     sessionStorage.removeItem("hospital_his_activeSubTab");
     setGatewaySystem("his");
     setActiveTab("duty");
+    setCurrentUser(MOCK_USERS[0]);
+    setNotifications([
+      {
+        id: "init-notif-1",
+        userId: "guest",
+        messageAr: "إشعار نظام: تم تسجيل الخروج بنجاح.",
+        messageEn: "System Notice: Logged out successfully.",
+        timestamp: new Date().toISOString(),
+        read: true,
+      },
+    ]);
   };
 
   // Secure Password/PIN retrieval & reset mechanisms tied to central employee registrar email

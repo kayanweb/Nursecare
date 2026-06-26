@@ -3,7 +3,8 @@ import { useState, useEffect, DependencyList, Dispatch, SetStateAction, useRef }
 export function useFirestoreSync<T>(
   syncFn: (onData: (data: T[]) => void) => () => void,
   initialData: T[],
-  deps: DependencyList = []
+  deps: DependencyList = [],
+  enabled: boolean = true
 ): [T[], Dispatch<SetStateAction<T[]>>, boolean] {
   const [data, setData] = useState<T[]>(initialData);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -14,12 +15,16 @@ export function useFirestoreSync<T>(
   }, [syncFn]);
 
   useEffect(() => {
+    if (!enabled) {
+      setIsLoaded(false);
+      return;
+    }
     const unsubscribe = syncFnRef.current((newData) => {
       setData(newData);
       setIsLoaded(true);
     });
     return () => unsubscribe();
-  }, deps);
+  }, [...deps, enabled]);
 
   return [data, setData, isLoaded];
 }
@@ -28,7 +33,8 @@ export function useFirestoreSetting<T>(
   syncFn: (key: string, onData: (data: T | null) => void) => () => void,
   settingKey: string,
   initialData: T,
-  deps: DependencyList = []
+  deps: DependencyList = [],
+  enabled: boolean = true
 ): [T, Dispatch<SetStateAction<T>>, boolean] {
   const [data, setData] = useState<T>(initialData);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -39,6 +45,10 @@ export function useFirestoreSetting<T>(
   }, [syncFn]);
 
   useEffect(() => {
+    if (!enabled) {
+      setIsLoaded(false);
+      return;
+    }
     const unsubscribe = syncFnRef.current(settingKey, (newData) => {
       if (newData !== null && newData !== undefined) {
         setData(newData);
@@ -46,7 +56,7 @@ export function useFirestoreSetting<T>(
       setIsLoaded(true);
     });
     return () => unsubscribe();
-  }, deps);
+  }, [...deps, enabled]);
 
   return [data, setData, isLoaded];
 }
