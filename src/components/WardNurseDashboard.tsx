@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { BedDouble, Droplets, Droplet, Clock, CheckCircle2, XCircle, AlertCircle, ScanBarcode, User, Activity, FileText, Share, AlertTriangle } from "lucide-react";
 import { syncSetting, saveSetting } from "../lib/firestoreService";
 import { toast } from "sonner";
+import { useHIS } from "../context/HISContext";
 
 interface Props {
   language: "ar" | "en";
@@ -24,6 +25,29 @@ export default function WardNurseDashboard({ language }: Props) {
   const [activeTab, setActiveTab] = useState<"patients" | "emar" | "io">("patients");
   const [admissions, setAdmissions] = useState<Admission[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<Admission | null>(null);
+
+  const hisContext = useHIS();
+  const hisPatients = hisContext ? hisContext.patients : [];
+  const wardPatients = hisPatients.filter(p => p.status === "ward");
+
+  // Combine live ward patients from context with synced admissions
+  const combinedAdmissions = [...admissions];
+  wardPatients.forEach(p => {
+    const exists = admissions.some(a => a.mrn === p.mrn);
+    if (!exists) {
+      combinedAdmissions.push({
+        id: `ADM-${p.id}`,
+        mrn: p.mrn,
+        patientName: isAr ? p.nameAr : p.nameEn,
+        bedId: "BED-TBD",
+        wardId: "WD-1",
+        status: "Admitted",
+        admittedAt: new Date().toISOString(),
+        diagnosis: isAr ? "تحت الملاحظة / تنويم داخلي" : "Observation / Ward Admission",
+        riskLevel: "Medium"
+      });
+    }
+  });
 
   useEffect(() => {
     const unsub = syncSetting("his_ward_admissions", (data) => {
@@ -98,7 +122,7 @@ export default function WardNurseDashboard({ language }: Props) {
 
       {activeTab === "patients" && (
          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 animate-fade-in">
-            {admissions.filter(a => a.status === "Admitted").map(adm => (
+            {combinedAdmissions.filter(a => a.status === "Admitted").map(adm => (
               <div key={adm.id} onClick={() => handleSelectPatient(adm)} className={`bg-white border-2 cursor-pointer p-4 rounded-2xl flex flex-col transition shadow-sm ${selectedPatient?.id === adm.id ? 'border-sky-400 bg-sky-50' : 'border-slate-100 hover:border-sky-200'}`}>
                  <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-3">
@@ -141,7 +165,7 @@ export default function WardNurseDashboard({ language }: Props) {
                  )}
               </div>
             ))}
-            {admissions.filter(a => a.status === "Admitted").length === 0 && (
+            {combinedAdmissions.filter(a => a.status === "Admitted").length === 0 && (
               <div className="col-span-full py-12 text-center text-slate-500 font-bold">
                 {isAr ? "لا يوجد مرضى منومين حالياً" : "No patients currently assigned"}
               </div>

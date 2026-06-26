@@ -2,16 +2,14 @@
 import { getActiveDbProvider, DB_PROVIDERS_CONFIG, DbProvider } from "./dbConfig";
 import { db } from "../firebase";
 import { 
-  collection, 
-  onSnapshot, 
-  query, 
-  doc, 
-  setDoc, 
-  deleteDoc, 
-  orderBy,
-  getDocs,
-  getLocalStore
-} from "./firestoreService";
+  collection as fbCollection, 
+  onSnapshot as fbOnSnapshot, 
+  query as fbQuery, 
+  doc,
+  setDoc,
+  deleteDoc,
+} from "firebase/firestore";
+import { getLocalStore } from "./firestoreService";
 
 // Bilingual notification trigger to alert the client to server faults
 export function triggerBilingualNotification(errorMsg: string) {
@@ -50,8 +48,8 @@ export function subscribeToClinicalData<T>(
   if (provider === "FIREBASE") {
     try {
       console.log(`📡 [Real-Time Stream] Connecting to Firebase Firestore collection: ${collectionName}`);
-      const q = query(collection(db, collectionName));
-      return onSnapshot(
+      const q = fbQuery(fbCollection(db, collectionName));
+      return fbOnSnapshot(
         q,
         (snapshot) => {
           const items: T[] = [];

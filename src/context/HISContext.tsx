@@ -1,6 +1,15 @@
 import React, { createContext, useContext, ReactNode, useEffect, useState } from "react";
 import { useFirestoreSync } from "../hooks/useFirestoreSync";
-import { syncPatients, savePatient as firestoreSavePatient, deletePatient as firestoreDeletePatient, syncPrescriptions, savePrescription as firestoreSavePrescription, syncInvoices, saveInvoice as firestoreSaveInvoice } from "../lib/firestoreService";
+import { 
+  syncPatients, 
+  savePatient as firestoreSavePatient, 
+  deletePatient as firestoreDeletePatient, 
+  syncPrescriptions, 
+  savePrescription as firestoreSavePrescription, 
+  syncInvoices, 
+  saveInvoice as firestoreSaveInvoice,
+  saveHISNotification
+} from "../lib/firestoreService";
 
 export type Patient = {
   id: string;
@@ -89,6 +98,29 @@ export function HISProvider({ children }: { children: ReactNode }) {
     const patient = patients.find(p => p.id === id);
     if (patient) {
       firestoreSavePatient({ ...patient, status }).catch(err => console.error("Cloud patient save error:", err));
+      
+      // Dispatch real-time Firestore notification
+      if (status === "ward") {
+        saveHISNotification({
+          id: `notif-status-${Date.now()}`,
+          titleAr: "طلب نقل لجناح التنويم",
+          titleEn: "Ward Admission Requested",
+          messageAr: `تم نقل المريض ${patient.nameAr} لجناح التنويم الداخلي. بانتظار استلام سرير الكاردكس.`,
+          messageEn: `Patient ${patient.nameEn} has been transferred to Inpatient Ward. Pending Bed assignment.`,
+          type: "info",
+          timestamp: new Date().toISOString()
+        }).catch(err => console.error("Cloud notification save error:", err));
+      } else if (status === "discharged") {
+        saveHISNotification({
+          id: `notif-status-${Date.now()}`,
+          titleAr: "خروج مريض من المستشفى",
+          titleEn: "Patient Discharged",
+          messageAr: `المريض: ${patient.nameAr} - تم إكمال إجراءات الخروج الطبية بنجاح.`,
+          messageEn: `Patient: ${patient.nameEn} - Medical discharge completed successfully.`,
+          type: "success",
+          timestamp: new Date().toISOString()
+        }).catch(err => console.error("Cloud notification save error:", err));
+      }
     }
   };
 

@@ -13,11 +13,12 @@ import { saveSetting, syncSetting } from "../lib/firestoreService";
 interface Props {
   language: "ar" | "en";
   currentUser?: any;
+  onNavigate?: (tab: string) => void;
 }
 
 type PatientTab = "summary" | "encounter" | "vitals" | "diagnoses" | "orders" | "lab" | "radiology" | "medications" | "billing" | "documents" | "audit" | "timeline";
 
-export default function EMRDashboard({ language, currentUser }: Props) {
+export default function EMRDashboard({ language, currentUser, onNavigate }: Props) {
   const isAr = language === "ar";
   const [viewMode, setViewMode] = useState<"queue" | "patient_file">("queue");
   const [activeRoleTab, setActiveRoleTab] = useState<"triage" | "emr">("triage");
@@ -78,8 +79,14 @@ export default function EMRDashboard({ language, currentUser }: Props) {
   };
 
   const submitAdmission = () => {
-    toast.success(isAr ? "تم إرسال طلب التنويم لإدارة الأسرة" : "Admission Request sent to Bed Management");
+    if (selectedPatient) {
+      updatePatientStatus(selectedPatient.id, "ward");
+    }
+    toast.success(isAr ? "تم نقل المريض للتنويم الداخلي وتوجيه طلب لإدارة الأسرة" : "Patient admitted to Ward & request sent to Bed Management");
     setShowAdmission(false);
+    if (onNavigate) {
+      onNavigate("ipd");
+    }
   };
 
   const submitSurgery = () => {

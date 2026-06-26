@@ -19,6 +19,27 @@ import {
 } from "lucide-react";
 import { syncSetting, saveSetting } from "../lib/firestoreService";
 import { toast } from "sonner";
+import SearchableCombobox from "./SearchableCombobox";
+import { LAB_CATALOG, RAD_CATALOG, PROC_CATALOG, MED_CATALOG } from "../data/medicalCatalog";
+
+const presetOptions: Record<string, { value: string; ar: string; en: string }[]> = {
+  Lab: LAB_CATALOG,
+  Radiology: RAD_CATALOG,
+  Medication: MED_CATALOG,
+  Procedure: PROC_CATALOG,
+  Admission: [
+    { value: "Admission to Intensive Care Unit (ICU)", ar: "تنويم بوحدة العناية المركزة (ICU)", en: "Admission to Intensive Care Unit (ICU)" },
+    { value: "Admission to Coronary Care Unit (CCU)", ar: "تنويم بوحدة رعاية القلب (CCU)", en: "Admission to Coronary Care Unit (CCU)" },
+    { value: "Admission to Medical Ward", ar: "تنويم بقسم الباطنة العام", en: "Admission to Medical Ward" },
+    { value: "Admission to Surgical Ward", ar: "تنويم بقسم الجراحة العام", en: "Admission to Surgical Ward" },
+  ],
+  Surgery: [
+    { value: "Urgent Appendectomy", ar: "استئصال الزائدة الدودية العاجل", en: "Urgent Appendectomy" },
+    { value: "Laparoscopic Cholecystectomy", ar: "استئصال المرارة بالمنظار", en: "Laparoscopic Cholecystectomy" },
+    { value: "Coronary Artery Bypass Graft (CABG)", ar: "عملية قلب مفتوح وتوصيل الشرايين", en: "Coronary Artery Bypass Graft (CABG)" },
+    { value: "Hernia Repair", ar: "إصلاح الفتق الجراحي", en: "Hernia Repair" },
+  ]
+};
 
 interface Order {
   id: string;
@@ -139,6 +160,7 @@ export default function OrderManagementEngine({
     setModalMode("add");
     setCurrentOrder({
       orderType: "Lab",
+      orderName: isAr ? presetOptions["Lab"][0].ar : presetOptions["Lab"][0].en,
       status: "Pending",
       priority: "Routine",
       mrn: "MRN-" + Math.floor(1000 + Math.random() * 9000),
@@ -237,7 +259,13 @@ export default function OrderManagementEngine({
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">{isAr ? "نوع الطلب" : "Order Category"}</label>
                   <select className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none"
-                    value={currentOrder.orderType || ""} onChange={e => setCurrentOrder({...currentOrder, orderType: e.target.value as Order["orderType"]})}>
+                    value={currentOrder.orderType || ""} 
+                    onChange={e => {
+                      const type = e.target.value as Order["orderType"];
+                      const defaults = presetOptions[type] || [];
+                      const defaultVal = defaults[0] ? (isAr ? defaults[0].ar : defaults[0].en) : "";
+                      setCurrentOrder({...currentOrder, orderType: type, orderName: defaultVal});
+                    }}>
                     <option value="Lab">Lab</option>
                     <option value="Radiology">Radiology</option>
                     <option value="Medication">Medication</option>
@@ -248,8 +276,13 @@ export default function OrderManagementEngine({
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">{isAr ? "تفاصيل الطلب (الخدمة/الدواء)" : "Requested Item Details"}</label>
-                  <input type="text" className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" 
-                    value={currentOrder.orderName || ""} onChange={e => setCurrentOrder({...currentOrder, orderName: e.target.value})} />
+                  <SearchableCombobox
+                    options={presetOptions[currentOrder.orderType || "Lab"] || []}
+                    value={currentOrder.orderName || ""}
+                    onChange={(val) => setCurrentOrder({...currentOrder, orderName: val})}
+                    placeholder={isAr ? "ابحث عن الفحص أو الدواء أو الخدمة..." : "Search for item..."}
+                    isAr={isAr}
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">{isAr ? "حالة الطلب" : "Status"}</label>

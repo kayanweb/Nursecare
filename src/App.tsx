@@ -1965,6 +1965,12 @@ Full administrative override and emergency clinical execution privileges have be
     taglineAr: "رعاية وعناية",
     nameEn: "Hospital",
     taglineEn: "Care and healing",
+    hisNameAr: "نظام معلومات المستشفى الموحد (HIS)",
+    hisNameEn: "Unified Hospital Information System (HIS)",
+    hisTaglineAr: "رعاية ذكية آمنة وسريعة",
+    hisTaglineEn: "Smart, Safe, and Rapid Care",
+    hisThemeColor: "#0a4275",
+    hisNotificationsEnabled: true,
     address: "العنوان",
     emergencyPhone: "123",
     footerAr:
@@ -3505,6 +3511,12 @@ Full administrative override and emergency clinical execution privileges have be
         if (storedSettings) {
           const appliedSettings = {
             ...storedSettings,
+            hisNameAr: storedSettings.hisNameAr || "نظام معلومات المستشفى الموحد (HIS)",
+            hisNameEn: storedSettings.hisNameEn || "Unified Hospital Information System (HIS)",
+            hisTaglineAr: storedSettings.hisTaglineAr || "رعاية ذكية آمنة وسريعة",
+            hisTaglineEn: storedSettings.hisTaglineEn || "Smart, Safe, and Rapid Care",
+            hisThemeColor: storedSettings.hisThemeColor || "#0a4275",
+            hisNotificationsEnabled: storedSettings.hisNotificationsEnabled !== false,
             loginMethods: storedSettings.loginMethods || {
               hospital_id: true,
               employee_code: true,
@@ -4136,6 +4148,27 @@ Full administrative override and emergency clinical execution privileges have be
 
   // General routing helper for dashboard with secondary parameters
   const handleGeneralNavigation = (tab: string, subTab?: string) => {
+    if (tab === "emr" || tab === "transport" || tab === "roster" || tab === "ward" || tab === "ipd" || tab === "supervisor" || tab === "nursing") {
+      setGatewaySystem("his");
+      setActiveTab("his");
+      if (tab === "transport") {
+        sessionStorage.setItem("hospital_his_activeModule", "ipd");
+        sessionStorage.setItem("hospital_his_activeSubTab", "nursing_flow");
+      } else if (tab === "roster" || tab === "supervisor" || tab === "nursing") {
+        sessionStorage.setItem("hospital_his_activeModule", "nursing");
+        sessionStorage.setItem("hospital_his_activeSubTab", "supervisor");
+      } else if (tab === "emr") {
+        sessionStorage.setItem("hospital_his_activeModule", "opd");
+        sessionStorage.setItem("hospital_his_activeSubTab", "emr_core");
+      } else if (tab === "ward" || tab === "ipd") {
+        sessionStorage.setItem("hospital_his_activeModule", "ipd");
+        sessionStorage.setItem("hospital_his_activeSubTab", "ipd");
+      }
+      // Reload window to trigger clean layout initialization of HIS components
+      window.location.reload();
+      return;
+    }
+
     if (tab === "approval" || tab === "rbac") {
       setActiveTab("it_panel");
       setItSubTab("rbac");
@@ -7904,8 +7937,16 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
       className={`min-h-screen flex flex-col md:flex-row font-sans ${language === "ar" ? "rtl" : "ltr"} ${gatewaySystem === "his" ? "bg-slate-950" : "bg-slate-50"} print:block print:min-h-0 print:h-auto print:p-0 print:m-0`}
       dir={language === "ar" ? "rtl" : "ltr"}
     >
+      {/* Mobile Backdrop */}
+      {isSidebarOpen && gatewaySystem !== "his" && (
+        <div 
+          className="md:hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       <aside
-        className={`no-print ${isSidebarOpen && gatewaySystem !== "his" ? "flex" : "hidden"} fixed inset-0 z-50 md:relative w-full md:w-64 bg-[#0a4275] text-white flex-col border-b md:border-b-0 shrink-0 md:h-screen overflow-y-auto`}
+        className={`no-print ${gatewaySystem === "his" ? "hidden" : "flex"} ${!isSidebarOpen && "md:hidden"} fixed inset-y-0 ${language === "ar" ? "right-0 translate-x-full" : "left-0 -translate-x-full"} md:translate-x-0 z-50 md:relative w-[280px] md:w-64 bg-[#0a4275] text-white flex-col shrink-0 h-full overflow-y-auto transition-transform duration-300 ${isSidebarOpen ? "!translate-x-0 shadow-2xl md:shadow-none" : ""}`}
       >
         <div className="h-16 flex items-center justify-between gap-3 px-4 sm:px-6 bg-[#06335c] border-b border-[#042442] shrink-0">
           <div className="flex items-center gap-3">
@@ -20605,6 +20646,140 @@ For premium ease of use, you can click the visual override button 'Modify & Choo
                     className="px-5 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg text-xs font-bold shadow transition cursor-pointer"
                   >
                     حفظ الهوية الجديدة
+                  </button>
+                </div>
+              </div>
+
+              {/* CARD: HIS SYSTEM CENTRAL CONFIGURATION AND BRANDING */}
+              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm text-right">
+                <div className="border-b border-slate-100 pb-3 mb-4">
+                  <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5 justify-end">
+                    <span>إعدادات نظام الـ HIS الموحد (Unified HIS Settings)</span>
+                    <HeartPulse className="h-4.5 w-4.5 text-blue-650" />
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    تخصيص هوية وشعار نظام معلومات المستشفى (HIS)، وألوانه، وإعدادات تنبيهاته السريرية لتتزامن في جميع الشاشات فوراً.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <label className="block text-[10px] font-bold text-blue-650 mb-1">
+                      اسم نظام الـ HIS بالعربية
+                    </label>
+                    <input
+                      type="text"
+                      value={settingsForm.hisNameAr || ""}
+                      onChange={(e) =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          hisNameAr: e.target.value,
+                        })
+                      }
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 focus:bg-white outline-none focus:ring-1 focus:ring-blue-500 font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-blue-650 mb-1">
+                      Hospital HIS Name (English)
+                    </label>
+                    <input
+                      type="text"
+                      value={settingsForm.hisNameEn || ""}
+                      onChange={(e) =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          hisNameEn: e.target.value,
+                        })
+                      }
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 focus:bg-white outline-none focus:ring-1 focus:ring-blue-500 font-mono font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1">
+                      شعار الـ HIS والسطر التعريفي بالعربية
+                    </label>
+                    <input
+                      type="text"
+                      value={settingsForm.hisTaglineAr || ""}
+                      onChange={(e) =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          hisTaglineAr: e.target.value,
+                        })
+                      }
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 focus:bg-white outline-none focus:ring-1 focus:ring-blue-500 font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1">
+                      HIS Slogan / Tagline (English)
+                    </label>
+                    <input
+                      type="text"
+                      value={settingsForm.hisTaglineEn || ""}
+                      onChange={(e) =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          hisTaglineEn: e.target.value,
+                        })
+                      }
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 focus:bg-white outline-none focus:ring-1 focus:ring-blue-500 font-mono font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1">
+                      اللون التعريفي الرئيسي للـ HIS (Sidebar Theme Color)
+                    </label>
+                    <select
+                      value={settingsForm.hisThemeColor || "#0a4275"}
+                      onChange={(e) =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          hisThemeColor: e.target.value,
+                        })
+                      }
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 focus:bg-white outline-none focus:ring-1 focus:ring-blue-500 font-bold text-xs"
+                    >
+                      <option value="#0a4275">أزرق كحلي كلاسيكي (Deep Royal Blue)</option>
+                      <option value="#0d9488">أخضر تركواز (Teal Green)</option>
+                      <option value="#059669">أخضر زمردي طبي (Emerald Medical)</option>
+                      <option value="#1e293b">رمادي داكن رسمي (Slate Slate)</option>
+                      <option value="#db2777">وردي بَهيّة (Classic Rose)</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-end pt-5">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <span className="text-[11px] font-bold text-slate-700">
+                        تفعيل جرس الإشعارات والتحذيرات الطبية الفورية بالـ HIS
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={settingsForm.hisNotificationsEnabled !== false}
+                        onChange={(e) =>
+                          setSettingsForm({
+                            ...settingsForm,
+                            hisNotificationsEnabled: e.target.checked,
+                          })
+                        }
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex justify-start">
+                  <button
+                    onClick={handleSaveHospitalSettings}
+                    className="px-5 py-2 bg-blue-650 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>حفظ إعدادات نظام الـ HIS وتزامنها</span>
                   </button>
                 </div>
               </div>

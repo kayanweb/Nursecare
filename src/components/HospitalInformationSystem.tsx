@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { playMedicalBeep, speakAlert } from "../lib/audio";
+import { useHIS } from "../context/HISContext";
 import {
   syncHISNotifications,
   saveHISNotification,
@@ -42,10 +44,14 @@ import {
   Globe,
   Bell,
   HelpCircle,
+  X,
+  Check,
+  Clock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 
+import { DynamicProfessionalLogo } from "./DynamicProfessionalLogo";
 import PatientRegistration from "./PatientRegistration";
 import EMRDashboard from "./EMRDashboard";
 import WardNurseDashboard from "./WardNurseDashboard";
@@ -100,6 +106,7 @@ import ReportsBIDashboard from "./ReportsBIDashboard";
 import MasterDataDashboard from "./MasterDataDashboard";
 import ClinicalFormsLibrary from "./ClinicalFormsLibrary";
 import PatientJourneySimulator from "./PatientJourneySimulator";
+import ClinicalTimelinesHub from "./ClinicalTimelinesHub";
 
 import PatientPortalDashboard from "./PatientPortalDashboard";
 
@@ -132,16 +139,24 @@ export default function HospitalInformationSystem({
   setNotifications,
   handleNotificationClick,
 }: HospitalInformationSystemProps) {
+  const { patients, updatePatientStatus, updatePatient } = useHIS();
+  const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
+  const [approvalPatient, setApprovalPatient] = useState<any>(null);
+
   const [isHISNotificationsOpen, setIsHISNotificationsOpen] = useState(false);
   const [isHISMessagesOpen, setIsHISMessagesOpen] = useState(false);
+  const [selectedHISNotification, setSelectedHISNotification] = useState<any>(null);
 
   const [hisNotifications, setHISNotifications] = useState<any[]>([]);
+  const prevNotifsCount = useRef(0);
+  const isInitialLoad = useRef(true);
   const [hisMessages, setHISMessages] = useState<any[]>([]);
   const [newHISMessageText, setNewHISMessageText] = useState("");
 
   // Sync HIS-specific real-time Notifications and Messages
   useEffect(() => {
     const unsubNotifs = syncHISNotifications((data) => {
+      if (!data) return;
       // Seed default mock clinical notifications if collection is empty
       if (data.length === 0) {
         const defaultNotifs = [
@@ -166,11 +181,27 @@ export default function HospitalInformationSystem({
         ];
         defaultNotifs.forEach(n => saveHISNotification(n));
       } else {
-        setHISNotifications(data);
+        const sortedData = [...data].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        
+        // Trigger realistic medical chime & text-to-speech if new notification arrives after initial load
+        if (!isInitialLoad.current && sortedData.length > prevNotifsCount.current) {
+          const newest = sortedData[sortedData.length - 1];
+          const isCritical = newest.type === "error" || 
+                             newest.titleEn?.toLowerCase().includes("critical") || 
+                             newest.titleAr?.includes("حرجة") || 
+                             newest.titleAr?.includes("كود");
+          playMedicalBeep(isCritical ? "critical" : "info");
+          speakAlert(newest.messageAr, newest.messageEn);
+        }
+        
+        setHISNotifications(sortedData);
+        prevNotifsCount.current = sortedData.length;
+        isInitialLoad.current = false;
       }
     });
 
     const unsubMessages = syncHISMessages((data) => {
+      if (!data) return;
       if (data.length === 0) {
         const defaultMessages = [
           {
@@ -446,6 +477,13 @@ export default function HospitalInformationSystem({
       ],
     },
     {
+      id: "clinical_timelines",
+      labelAr: "التسلسلات والتوقيتات",
+      labelEn: "Sequences & Timings",
+      icon: Clock,
+      hasChildren: false,
+    },
+    {
       id: "hr",
       labelAr: "الإدارة",
       labelEn: "Administration",
@@ -513,6 +551,24 @@ export default function HospitalInformationSystem({
       setIsSidebarOpen(false);
     } else if (window.innerWidth < 768 && subId) {
       setIsSidebarOpen(false);
+    }
+  };
+
+  const handleSmartNavigate = (tab: string, subTab?: string) => {
+    if (tab === "transport" && subTab === "approve") {
+      // Find the first patient waiting for inpatient ward admission
+      const waitingPatient = patients.find(p => p.status === "ward");
+      setApprovalPatient(waitingPatient || null);
+      setIsApprovalModalOpen(true);
+      playMedicalBeep("info");
+    } else if (tab === "emr") {
+      handleSubTabClick("opd", "emr_core");
+    } else if (tab === "roster") {
+      handleSubTabClick("nursing", "supervisor");
+    } else if (tab === "transport") {
+      handleSubTabClick("ipd", "nursing_flow");
+    } else {
+      handleSubTabClick(tab, subTab);
     }
   };
 
@@ -1483,18 +1539,21 @@ export default function HospitalInformationSystem({
 
       {/* Sidebar */}
       <div
-        className={`fixed md:static inset-y-0 ${isAr ? "right-0" : "left-0"} z-50 w-64 bg-[#0a4275] text-white flex-shrink-0 flex flex-col transition-transform duration-300 ${isSidebarOpen ? "translate-x-0" : isAr ? "translate-x-full md:translate-x-0" : "-translate-x-full md:translate-x-0"} md:block ${!isSidebarOpen && "md:w-20"}`}
+        className={`fixed md:static inset-y-0 ${isAr ? "right-0" : "left-0"} z-50 w-[280px] md:w-64 text-white flex-shrink-0 flex flex-col transition-transform duration-300 ${isSidebarOpen ? "translate-x-0 shadow-2xl md:shadow-none" : isAr ? "translate-x-full md:translate-x-0" : "-translate-x-full md:translate-x-0"} ${!isSidebarOpen && "md:w-20"}`}
+        style={{ backgroundColor: hospitalSettings?.hisThemeColor || "#0a4275" }}
       >
         {/* Logo area */}
-        <div className="h-16 flex items-center px-4 border-b border-white/10 shrink-0">
-          <Activity className="w-8 h-8 text-white mr-2 shrink-0" />
-          <span
-            className={`font-bold text-lg leading-tight whitespace-nowrap ${!isSidebarOpen && "md:hidden"}`}
-          >
-            Medica
-            <br />
-            CloudCare
-          </span>
+        <div className="h-16 flex items-center px-3 border-b border-white/10 shrink-0 overflow-hidden">
+          <DynamicProfessionalLogo
+            nameAr={hospitalSettings?.hisNameAr || hospitalSettings?.nameAr}
+            nameEn={hospitalSettings?.hisNameEn || hospitalSettings?.nameEn}
+            taglineAr={hospitalSettings?.hisTaglineAr || hospitalSettings?.taglineAr}
+            taglineEn={hospitalSettings?.hisTaglineEn || hospitalSettings?.taglineEn}
+            size="sm"
+            isAr={isAr}
+            dark={true}
+            hideText={!isSidebarOpen}
+          />
         </div>
 
         {/* Sidebar Menu */}
@@ -1641,7 +1700,7 @@ export default function HospitalInformationSystem({
                         </div>
                       ) : (
                         hisNotifications.map((n) => (
-                          <div key={n.id} className="p-3 border-b border-slate-50 hover:bg-slate-50 cursor-pointer">
+                          <div key={n.id} onClick={() => { setSelectedHISNotification(n); setIsHISNotificationsOpen(false); }} className="p-3 border-b border-slate-50 hover:bg-slate-50 cursor-pointer">
                             <div className="text-xs font-bold text-slate-800">
                               {isAr ? n.titleAr : n.titleEn}
                             </div>
@@ -1658,6 +1717,339 @@ export default function HospitalInformationSystem({
                   </div>
                 )}
               </div>
+              
+              {/* Dynamic Pop-up Modal for HIS Notifications */}
+              {selectedHISNotification && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-[9999] animate-fade">
+                  <div
+                    className="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200 text-center"
+                    dir={isAr ? "rtl" : "ltr"}
+                  >
+                    <div className="p-6 relative">
+                      <button
+                        onClick={() => setSelectedHISNotification(null)}
+                        className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      
+                      <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 ${selectedHISNotification.type === 'error' ? 'bg-rose-100 text-rose-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                        <Bell className="w-8 h-8" />
+                      </div>
+                      
+                      <h2 className="text-xl font-bold text-slate-800 mb-2">
+                        {isAr ? selectedHISNotification.titleAr : selectedHISNotification.titleEn}
+                      </h2>
+                      
+                      <p className="text-sm text-slate-600 leading-relaxed mb-6">
+                        {isAr ? selectedHISNotification.messageAr : selectedHISNotification.messageEn}
+                      </p>
+                      
+                      <button
+                        onClick={() => {
+                          const title = (selectedHISNotification.titleEn || "").toLowerCase();
+                          const titleAr = selectedHISNotification.titleAr || "";
+                          const msg = (selectedHISNotification.messageEn || "").toLowerCase();
+                          const msgAr = selectedHISNotification.messageAr || "";
+                          
+                          // Intelligent routing based on Arabic/English notification keywords
+                          if (
+                            titleAr.includes("تنويم") || 
+                            titleAr.includes("نقل") || 
+                            msgAr.includes("تنويم") || 
+                            msgAr.includes("نقل") ||
+                            title.includes("admission") ||
+                            title.includes("admit") ||
+                            title.includes("ward") ||
+                            title.includes("transfer") ||
+                            msg.includes("admission") ||
+                            msg.includes("admit") ||
+                            msg.includes("ward") ||
+                            msg.includes("transfer")
+                          ) {
+                            handleSubTabClick("ipd", "ipd");
+                            toast.success(isAr ? "تم التوجيه لإدارة الأجنحة والتنويم الداخلي" : "Routed to Ward Management (IPD)");
+                          } else if (
+                            titleAr.includes("عملية") || 
+                            titleAr.includes("جراحة") ||
+                            title.includes("surgery") || 
+                            title.includes("operation") ||
+                            msg.includes("surgery") ||
+                            msg.includes("operation")
+                          ) {
+                            handleSubTabClick("ot", "ot");
+                            toast.success(isAr ? "تم التوجيه لغرفة العمليات" : "Routed to Operating Theater");
+                          } else if (
+                            titleAr.includes("معمل") || 
+                            titleAr.includes("نتائج") || 
+                            titleAr.includes("تحليل") ||
+                            title.includes("lab") || 
+                            title.includes("result") || 
+                            msg.includes("lab") || 
+                            msg.includes("result") ||
+                            title.includes("cbc") ||
+                            title.includes("troponin")
+                          ) {
+                            handleSubTabClick("outpatient", "emr_core");
+                            toast.success(isAr ? "تم التوجيه للملف الطبي الموحد (EMR)" : "Routed to Electronic Medical Records (EMR)");
+                          } else if (
+                            titleAr.includes("طوارئ") || 
+                            msgAr.includes("طوارئ") ||
+                            title.includes("emergency") || 
+                            title.includes("er") ||
+                            msg.includes("emergency") || 
+                            msg.includes("er")
+                          ) {
+                            handleSubTabClick("er", "er");
+                            toast.success(isAr ? "تم التوجيه لقسم الطوارئ" : "Routed to Emergency Department");
+                          } else {
+                            // Default fallback
+                            handleSubTabClick("outpatient", "emr_core");
+                          }
+                          setSelectedHISNotification(null);
+                        }}
+                        className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl shadow-lg active:translate-y-0.5 transition"
+                      >
+                        {isAr ? "إغلاق والتوجيه" : "Close and Route"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Clinical Bed Assignment & Ward Admission Approval Dialog */}
+              {isApprovalModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-[9999] animate-fade" dir={isAr ? "rtl" : "ltr"}>
+                  <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
+                    <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                          <BedDouble className="w-5 h-5" />
+                        </div>
+                        <div className="text-right">
+                          <h3 className="font-bold text-slate-800 text-sm">
+                            {isAr ? "اعتماد طلب التنويم وتخصيص السرير" : "Inpatient Ward Bed Allocation & Admission"}
+                          </h3>
+                          <p className="text-[10px] text-slate-400">
+                            {isAr ? "إجراءات الدخول المباشر والتخصيص" : "Direct clinical ward admission & board assignment"}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setIsApprovalModalOpen(false);
+                          setApprovalPatient(null);
+                        }}
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="p-6 overflow-y-auto space-y-5 text-sm text-slate-600">
+                      {/* Patient selector if no default approvalPatient */}
+                      {!approvalPatient ? (
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-slate-700 block text-right">
+                            {isAr ? "اختر المريض المطلوب تنويمه" : "Select Patient for Inpatient Ward"}
+                          </label>
+                          <select
+                            onChange={(e) => {
+                              const pat = patients.find(p => p.id === e.target.value);
+                              setApprovalPatient(pat || null);
+                            }}
+                            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                          >
+                            <option value="">{isAr ? "-- اختر من قائمة الانتظار --" : "-- Select from Ward queue --"}</option>
+                            {patients
+                              .filter(p => p.status === "ward" || p.status === "emergency")
+                              .map(p => (
+                                <option key={p.id} value={p.id}>
+                                  {isAr ? `${p.nameAr} (${p.id})` : `${p.nameEn} (${p.id})`}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <div className="bg-emerald-50/50 border border-emerald-100/80 rounded-2xl p-4 flex items-center justify-between">
+                          <div className="text-right">
+                            <div className="text-xs text-emerald-800 font-bold">
+                              {isAr ? approvalPatient.nameAr : approvalPatient.nameEn}
+                            </div>
+                            <div className="text-[10px] text-slate-500 mt-1 flex gap-2">
+                              <span>ID: {approvalPatient.id}</span>
+                              <span>•</span>
+                              <span>{isAr ? "العمر:" : "Age:"} {approvalPatient.age || "42"}</span>
+                              <span>•</span>
+                              <span>{isAr ? approvalPatient.gender === "male" ? "ذكر" : "أنثى" : approvalPatient.gender}</span>
+                            </div>
+                            <div className="text-[10px] text-emerald-700/80 mt-1.5 font-medium">
+                              {isAr ? `التشخيص المبدئي: ${approvalPatient.diagnosis || "التهاب حاد"}` : `Admitting Diagnosis: ${approvalPatient.diagnosis || "Acute Appendicitis"}`}
+                            </div>
+                          </div>
+                          <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-1 rounded-full uppercase">
+                            {approvalPatient.status}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Bed assignment Form fields */}
+                      <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!approvalPatient) {
+                          toast.error(isAr ? "يرجى تحديد المريض أولاً" : "Please select a patient first");
+                          return;
+                        }
+                        const formData = new FormData(e.currentTarget);
+                        const roomNo = formData.get("roomNo") as string;
+                        const bedNo = formData.get("bedNo") as string;
+                        const wardType = formData.get("wardType") as string;
+                        const doctorId = formData.get("doctorId") as string;
+                        const nursePin = formData.get("nursePin") as string;
+
+                        if (!roomNo || !bedNo || !wardType) {
+                          toast.error(isAr ? "يرجى ملء جميع الحقول المطلوبة" : "Please fill out all required fields");
+                          return;
+                        }
+
+                        if (nursePin !== "1234") {
+                          toast.error(isAr ? "رمز التحقق (PIN) للممرض غير صحيح! الرمز الافتراضي هو 1234" : "Invalid Nurse PIN! Default is 1234");
+                          return;
+                        }
+
+                        // Play success chimes
+                        playMedicalBeep("success");
+
+                        // Update patient's status & write direct bed info to Firestore
+                        const updatedPatient = {
+                          ...approvalPatient,
+                          status: "admitted" as any,
+                          roomNo: roomNo,
+                          bedNo: bedNo,
+                          wardType: wardType,
+                          assignedDoctorId: doctorId || approvalPatient.assignedDoctorId || "doc-101"
+                        };
+
+                        await updatePatient(approvalPatient.id, updatedPatient);
+                        
+                        // Save clear clinical notification
+                        await saveHISNotification({
+                          id: `notif-admission-${Date.now()}`,
+                          titleAr: "اكتمل قبول المريض بالجناح",
+                          titleEn: "Ward Admission Finalized",
+                          messageAr: `تم بنجاح تسكين المريض ${updatedPatient.nameAr} في غرفة ${roomNo} سرير ${bedNo} بقسم ${wardType}.`,
+                          messageEn: `Patient ${updatedPatient.nameEn} has been successfully assigned to Room ${roomNo}, Bed ${bedNo} (${wardType}).`,
+                          type: "success",
+                          timestamp: new Date().toISOString()
+                        });
+
+                        toast.success(isAr ? "تم إتمام القبول وتخصيص السرير بنجاح!" : "Admission finalized and bed allocated successfully!");
+                        setIsApprovalModalOpen(false);
+                        setApprovalPatient(null);
+                        
+                        // Automatically open the IPD subtab to show them the newly admitted patient in Ward Kardex
+                        handleSubTabClick("ipd", "ipd");
+                      }} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-xs font-bold text-slate-700 block mb-1 text-right">
+                              {isAr ? "نوع الجناح الطبي *" : "Medical Ward Type *"}
+                            </label>
+                            <select
+                              name="wardType"
+                              required
+                              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                            >
+                              <option value="General Ward">{isAr ? "الجناح العام (General Ward)" : "General Ward"}</option>
+                              <option value="ICU">{isAr ? "العناية المركزة (ICU)" : "Intensive Care (ICU)"}</option>
+                              <option value="CCU">{isAr ? "عناية القلب (CCU)" : "Coronary Care (CCU)"}</option>
+                              <option value="Pediatrics Ward">{isAr ? "جناح الأطفال (Pediatrics)" : "Pediatrics Ward"}</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="text-xs font-bold text-slate-700 block mb-1 text-right">
+                              {isAr ? "رقم الغرفة *" : "Room Number *"}
+                            </label>
+                            <input
+                              type="text"
+                              name="roomNo"
+                              required
+                              placeholder="e.g. 302-A"
+                              defaultValue="312"
+                              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none text-right"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-xs font-bold text-slate-700 block mb-1 text-right">
+                              {isAr ? "رقم السرير الكاردكس *" : "Kardex Bed Number *"}
+                            </label>
+                            <select
+                              name="bedNo"
+                              required
+                              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                            >
+                              <option value="Bed 1">{isAr ? "سرير 1 (Bed 1)" : "Bed 1"}</option>
+                              <option value="Bed 2">{isAr ? "سرير 2 (Bed 2)" : "Bed 2"}</option>
+                              <option value="Bed 3">{isAr ? "سرير 3 (Bed 3)" : "Bed 3"}</option>
+                              <option value="Bed 4">{isAr ? "سرير 4 (Bed 4)" : "Bed 4"}</option>
+                              <option value="Bed A-ICU">{isAr ? "سرير طوارئ أ" : "Bed A-ICU"}</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="text-xs font-bold text-slate-700 block mb-1 text-right">
+                              {isAr ? "الطبيب الاستشاري المسؤول" : "Responsible Admitting Consultant"}
+                            </label>
+                            <select
+                              name="doctorId"
+                              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                            >
+                              {systemUsers?.filter(u => u.role === "doctor" || u.role?.includes("doc")).map(u => (
+                                <option key={u.id} value={u.id}>
+                                  {isAr ? u.nameAr : u.nameEn}
+                                </option>
+                              )) || (
+                                <option value="doc-101">{isAr ? "د. أحمد مصطفى (باطنة)" : "Dr. Ahmed Mostafa (Medicine)"}</option>
+                              )}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-slate-100 pt-4">
+                          <label className="text-xs font-bold text-slate-700 block mb-1 text-right">
+                            {isAr ? "رمز التحقق الثنائي للممرض (PIN) *" : "Nurse E-Signature PIN Validation *"}
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="password"
+                              name="nursePin"
+                              required
+                              maxLength={4}
+                              placeholder="••••"
+                              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none text-center tracking-[0.5em]"
+                            />
+                          </div>
+                          <span className="text-[9px] text-slate-400 mt-1 block text-right">
+                            {isAr ? "الرمز الافتراضي للتجربة هو 1234" : "The default validation PIN is 1234"}
+                          </span>
+                        </div>
+
+                        <button
+                          type="submit"
+                          className="w-full py-3 mt-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/15 transition flex items-center justify-center gap-2"
+                        >
+                          <Check className="w-4 h-4" />
+                          <span>{isAr ? "تأكيد التنويم وتسكين الغرفة فوراً" : "Finalize Inpatient Ward Bed Allocation"}</span>
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="relative">
                 <div
@@ -1801,10 +2193,10 @@ export default function HospitalInformationSystem({
                 <ClinicsListDashboard language={language} systemUsers={systemUsers || []} departments={departments} onNavigate={handleSubTabClick} />
               )}
               {activeSubTab === "physician_desk" && (
-                <DoctorConsultationDesk language={language} currentUser={currentUser} systemUsers={systemUsers || []} departments={departments} />
+                <DoctorConsultationDesk language={language} currentUser={currentUser} systemUsers={systemUsers || []} departments={departments} onNavigate={(subTab) => handleSubTabClick("ipd", subTab)} />
               )}
               {activeSubTab === "opd" && (
-                <DoctorConsultationDesk language={language} currentUser={currentUser} systemUsers={systemUsers || []} departments={departments} />
+                <DoctorConsultationDesk language={language} currentUser={currentUser} systemUsers={systemUsers || []} departments={departments} onNavigate={(subTab) => handleSubTabClick("ipd", subTab)} />
               )}
               {activeSubTab === "nicu" && <NICUDashboard language={language} />}
               {activeSubTab === "pacu" && <PACUDashboard language={language} />}
@@ -1853,6 +2245,9 @@ export default function HospitalInformationSystem({
                 <MasterDataDashboard language={language} />
               )}
               {activeSubTab === "clinical_forms" && <ClinicalFormsLibrary />}
+              {activeSubTab === "clinical_timelines" && (
+                <ClinicalTimelinesHub language={language} />
+              )}
               {activeSubTab === "patient_journey" && (
                 <PatientJourneySimulator language={language} />
               )}
@@ -1870,7 +2265,7 @@ export default function HospitalInformationSystem({
                 <PatientPortalDashboard language={language} />
               )}
               {activeSubTab === "emr_core" && (
-                <EMRDashboard language={language} currentUser={currentUser} />
+                <EMRDashboard language={language} currentUser={currentUser} onNavigate={(subTab) => handleSubTabClick("ipd", subTab)} />
               )}
               {activeSubTab === "ipd" && (
                 <WardNurseDashboard language={language} />
@@ -1896,13 +2291,13 @@ export default function HospitalInformationSystem({
                 />
               )}
               {activeSubTab === "cno" && (
-                <NursingDirectorDashboard language={language} />
+                <NursingDirectorDashboard language={language} onNavigate={handleSmartNavigate} />
               )}
               {activeSubTab === "nursing" && (
-                <NursingDirectorDashboard language={language} />
+                <NursingDirectorDashboard language={language} onNavigate={handleSmartNavigate} />
               )}
               {activeSubTab === "supervisor" && (
-                <NursingSupervisorDashboard language={language} />
+                <NursingSupervisorDashboard language={language} onNavigate={handleSmartNavigate} />
               )}
               {activeSubTab === "icu" && <ICUDashboard language={language} />}
               {activeSubTab === "er" && <ERDashboard language={language} />}

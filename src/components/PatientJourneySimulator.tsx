@@ -5,6 +5,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
+import { useHIS } from "../context/HISContext";
+import { saveHISNotification } from "../lib/firestoreService";
 
 interface Props {
   language: "en" | "ar";
@@ -12,6 +14,7 @@ interface Props {
 
 export default function PatientJourneySimulator({ language }: Props) {
   const isAr = language === "ar";
+  const { addPatient, updatePatientStatus, updatePatient, addPrescription, addInvoice, updatePrescriptionStatus } = useHIS();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [patientId] = useState(`MRN-${Math.floor(100000 + Math.random() * 900000)}`);
@@ -165,6 +168,39 @@ export default function PatientJourneySimulator({ language }: Props) {
                   {!state.registration.done ? (
                     <button 
                       onClick={() => {
+                        // Register patient in Firestore
+                        addPatient({
+                          id: patientId,
+                          mrn: patientId,
+                          nameEn: "Ahmad Mohamed Mahmoud",
+                          nameAr: "أحمد محمد محمود",
+                          age: 45,
+                          gender: "male",
+                          phone: "+966 50 123 4567",
+                          status: "triage",
+                          insurance: "Cash"
+                        });
+                        
+                        // Register reception fee invoice
+                        addInvoice({
+                          id: `inv-reg-${patientId}`,
+                          patientId: patientId,
+                          amount: 50,
+                          status: "unpaid",
+                          date: new Date().toISOString()
+                        });
+
+                        // Notify triage
+                        saveHISNotification({
+                          id: `notif-reg-${Date.now()}`,
+                          titleAr: "مريض جديد في قائمة الانتظار",
+                          titleEn: "New Patient Registered",
+                          messageAr: `المريض أحمد محمد محمود تم تسجيله برقم ${patientId} ومحول لقسم الفرز.`,
+                          messageEn: `Patient Ahmad Mohamed Mahmoud registered with MRN ${patientId} and routed to Triage.`,
+                          type: "info",
+                          timestamp: new Date().toISOString()
+                        }).catch(e => console.error(e));
+
                         setState(s => ({ ...s, registration: { done: true, data: {} } }));
                         toast.success(isAr ? "تم التسجيل وتم إرسال المريض للفرز" : "Registered and sent to Triage");
                         setTimeout(handleNext, 1000);
@@ -239,6 +275,29 @@ export default function PatientJourneySimulator({ language }: Props) {
                   {!state.triage.done && state.triage.acuity && (
                     <button 
                       onClick={() => {
+                        // Update patient status in Firestore
+                        updatePatientStatus(patientId, "doctor");
+
+                        // Add Triage Invoice
+                        addInvoice({
+                          id: `inv-triage-${patientId}`,
+                          patientId: patientId,
+                          amount: 100,
+                          status: "unpaid",
+                          date: new Date().toISOString()
+                        });
+
+                        // Notify ER Doctor
+                        saveHISNotification({
+                          id: `notif-triage-${Date.now()}`,
+                          titleAr: "حالة عاجلة محولة للطبيب",
+                          titleEn: "Emergent Patient Triaged (Level 2)",
+                          messageAr: `المريض أحمد محمد محمود تم فرزه بمستوى خطورة عالي (Level 2 - Emergent) ومحول للطبيب فوراً.`,
+                          messageEn: `Patient Ahmad Mohamed Mahmoud triaged as Level 2 (Emergent) and assigned to ER Physician immediately.`,
+                          type: "warning",
+                          timestamp: new Date().toISOString()
+                        }).catch(e => console.error(e));
+
                         setState(s => ({ ...s, triage: { ...s.triage, done: true } }));
                         toast.success(isAr ? "تم حفظ الفرز وإشعار الطبيب" : "Triage saved, physician notified");
                         setTimeout(handleNext, 1000);
@@ -325,13 +384,70 @@ export default function PatientJourneySimulator({ language }: Props) {
                   {!state.doctor.done ? (
                     <button 
                       onClick={() => {
+                        // Create prescriptions in Firestore
+                        addPrescription({
+                          id: `rx-aspirin-${patientId}`,
+                          patientId: patientId,
+                          medication: "Aspirin 300mg PO",
+                          dose: "STAT",
+                          qty: 1,
+                          status: "pending",
+                          date: new Date().toISOString()
+                        });
+
+                        addPrescription({
+                          id: `rx-nitro-${patientId}`,
+                          patientId: patientId,
+                          medication: "Nitroglycerin 0.4mg SL",
+                          dose: "STAT",
+                          qty: 1,
+                          status: "pending",
+                          date: new Date().toISOString()
+                        });
+
+                        // Add Orders Invoices
+                        addInvoice({
+                          id: `inv-ecg-${patientId}`,
+                          patientId: patientId,
+                          amount: 150,
+                          status: "unpaid",
+                          date: new Date().toISOString()
+                        });
+
+                        addInvoice({
+                          id: `inv-enz-${patientId}`,
+                          patientId: patientId,
+                          amount: 250,
+                          status: "unpaid",
+                          date: new Date().toISOString()
+                        });
+
+                        addInvoice({
+                          id: `inv-rad-${patientId}`,
+                          patientId: patientId,
+                          amount: 200,
+                          status: "unpaid",
+                          date: new Date().toISOString()
+                        });
+
+                        // Notify Lab and Pharmacy
+                        saveHISNotification({
+                          id: `notif-doc-${Date.now()}`,
+                          titleAr: "طلبات STAT عاجلة جديدة",
+                          titleEn: "New STAT Orders Signed",
+                          messageAr: `الطبيب وقع بروتوكول الذبحة الصدرية (Troponin, ECG, Aspirin, NTG) للمريض أحمد محمد محمود.`,
+                          messageEn: `ER Physician signed ACS STAT orders (Troponin, ECG, Aspirin, NTG) for patient Ahmad Mohamed Mahmoud.`,
+                          type: "info",
+                          timestamp: new Date().toISOString()
+                        }).catch(e => console.error(e));
+
                         setState(s => ({ ...s, doctor: { ...s.doctor, done: true, ordersSent: true } }));
                         toast.success(isAr ? "تم إرسال الطلبات للأقسام المعنية" : "Orders routed to Lab & Rad");
                         setTimeout(handleNext, 1500);
                       }}
                       className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all"
                     >
-                      {isAr ? "توقيع وإرسال الطلبات للمعمل والأشعة" : "Sign & Send Orders"}
+                      {isAr ? "توقيع وإرسال الطلبات للمعمل والصيدلية" : "Sign & Send Orders"}
                     </button>
                   ) : (
                     <div className="w-full bg-indigo-50 text-indigo-700 font-bold py-3 rounded-xl border border-indigo-200 flex items-center justify-center gap-2">
@@ -408,6 +524,17 @@ export default function PatientJourneySimulator({ language }: Props) {
                     {!state.lab.resultsEntered ? (
                       <button 
                         onClick={() => {
+                          // Save critical laboratory result notification to Firestore
+                          saveHISNotification({
+                            id: `notif-lab-${Date.now()}`,
+                            titleAr: "قيمة حرجة للمريض أحمد محمد محمود",
+                            titleEn: "CRITICAL HIGH: Troponin I",
+                            messageAr: `تحذير: قيمة التروبونين مرتفعة جداً (1.45 ng/mL) للمريض أحمد محمود. احتمال ذبحة صدرية حادة.`,
+                            messageEn: `Warning: Troponin I is critically high (1.45 ng/mL) for patient Ahmad Mahmoud. Immediate ACS protocol recommended.`,
+                            type: "error",
+                            timestamp: new Date().toISOString()
+                          }).catch(e => console.error(e));
+
                           setState(s => ({ ...s, lab: { ...s.lab, resultsEntered: true } }));
                           toast.success(isAr ? "تم رفع النتائج وإشعار الطبيب فوراً" : "Results uploaded, doctor notified!");
                           setTimeout(handleNext, 1500);
@@ -502,6 +629,33 @@ export default function PatientJourneySimulator({ language }: Props) {
                     {!state.nursing.done ? (
                       <button 
                         onClick={() => {
+                          // Update prescription statuses to dispensed in Firestore
+                          updatePrescriptionStatus(`rx-aspirin-${patientId}`, "dispensed");
+                          updatePrescriptionStatus(`rx-nitro-${patientId}`, "dispensed");
+
+                          // Add nursing service invoice line
+                          addInvoice({
+                            id: `inv-nurse-${patientId}`,
+                            patientId: patientId,
+                            amount: 75,
+                            status: "unpaid",
+                            date: new Date().toISOString()
+                          });
+
+                          // Update patient status to ward (admitted to inpatient bed)
+                          updatePatientStatus(patientId, "ward");
+
+                          // Save nursing execution and admit notification to Firestore
+                          saveHISNotification({
+                            id: `notif-nurse-${Date.now()}`,
+                            titleAr: "إعطاء الأدوية ونقل المريض لجناح التنويم",
+                            titleEn: "STAT Meds Given & Ward Transfer Requested",
+                            messageAr: `تم إعطاء الأسبرين والنيتروجليسرين للمريض أحمد محمد محمود. حالته مستقرة الآن وتم نقله لجناح التنويم الداخلي.`,
+                            messageEn: `STAT Aspirin and Nitroglycerin successfully administered. Patient Ahmad Mohamed Mahmoud stabilized and transferred to Inpatient Ward.`,
+                            type: "success",
+                            timestamp: new Date().toISOString()
+                          }).catch(e => console.error(e));
+
                           setState(s => ({ ...s, nursing: { ...s.nursing, done: true } }));
                           toast.success(isAr ? "تم حفظ توثيق التمريض في الملف" : "Nursing documentation saved to EMR");
                         }}
